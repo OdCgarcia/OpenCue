@@ -1,4 +1,4 @@
-#  Copyright Contributors to the OpenCue Project
+# Copyright (c) 2025. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,20 +16,15 @@
 """Widget for displaying a list of hosts with admin controls."""
 
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 from builtins import str
 
-from qtpy import QtCore
-from qtpy import QtWidgets
-
 import opencue
+from qtpy import QtCore, QtWidgets
 
 import cuegui.HostMonitorTree
 import cuegui.Logger
-
 
 log = cuegui.Logger.getLogger(__file__)
 
@@ -60,7 +55,6 @@ class HostMonitor(QtWidgets.QWidget):
         self.__filterByHostNameSetup(hlayout)
         self.__filterAllocationSetup(hlayout)
         self.__filterHardwareStateSetup(hlayout)
-        self.__filterLockStateSetup(hlayout)
         hlayout.addStretch()
         self.__refreshToggleCheckBoxSetup(hlayout)
         self.__refreshButtonSetup(hlayout)
@@ -117,18 +111,16 @@ class HostMonitor(QtWidgets.QWidget):
         btn.setFixedWidth(24)
         layout.addWidget(btn)
         # pylint: disable=no-member
-        QtCore.QObject.connect(btn,
-                               QtCore.SIGNAL('clicked()'),
-                               self.__filterByHostNameClear)
+        QtCore.QObject.connect(btn, QtCore.SIGNAL("clicked()"), self.__filterByHostNameClear)
         # pylint: disable=unused-private-member
         self.__filterByHostNameClearBtn = btn
 
     def __filterByHostNameHandle(self):
         regex = str(self.__filterByHostName.text()).split()
         if regex:
-            self.hostMonitorTree.hostSearch.options['regex'] = regex
+            self.hostMonitorTree.hostSearch.options["regex"] = regex
         else:
-            self.hostMonitorTree.hostSearch.options['regex'] = []
+            self.hostMonitorTree.hostSearch.options["regex"] = []
         if regex != self.__filterByHostNameLastInput:
             self.__filterByHostNameLastInput = regex
             self.hostMonitorTree.updateRequest()
@@ -136,27 +128,24 @@ class HostMonitor(QtWidgets.QWidget):
     def __filterByHostNameClear(self):
         self.__filterByHostNameLastInput = ""
         self.__filterByHostName.setText("")
-        self.hostMonitorTree.hostSearch.options['regex'] = []
+        self.hostMonitorTree.hostSearch.options["regex"] = []
 
     # ==============================================================================
     # Menu to filter by allocation
     # ==============================================================================
     def __filterAllocationSetup(self, layout):
-        self.__filterAllocationList = sorted(
-            [alloc.name() for alloc in opencue.api.getAllocations()])
+        self.__filterAllocationList = sorted([alloc.name() for alloc in opencue.api.getAllocations()])
 
         btn = QtWidgets.QPushButton("Filter Allocation")
         btn.setMaximumHeight(FILTER_HEIGHT)
         btn.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn.setContentsMargins(0,0,0,0)
+        btn.setContentsMargins(0, 0, 0, 0)
         btn.setFlat(True)
 
         menu = QtWidgets.QMenu(self)
         btn.setMenu(menu)
         # pylint: disable=no-member
-        QtCore.QObject.connect(menu,
-                               QtCore.SIGNAL("triggered(QAction*)"),
-                               self.__filterAllocationHandle)
+        QtCore.QObject.connect(menu, QtCore.SIGNAL("triggered(QAction*)"), self.__filterAllocationHandle)
 
         for item in ["Clear", None] + self.__filterAllocationList:
             if item:
@@ -189,17 +178,17 @@ class HostMonitor(QtWidgets.QWidget):
             for item in self.__filterAllocationButton.menu().actions():
                 if item.isChecked():
                     if item.text() != "Clear":
-                        __hostSearch.options['alloc'].remove(str(item.text()))
+                        __hostSearch.options["alloc"].remove(str(item.text()))
                     item.setChecked(False)
         else:
-            allocs = __hostSearch.options.get('alloc', [])
+            allocs = __hostSearch.options.get("alloc", [])
             if action.isChecked():
                 allocs.append(str(action.text()))
             elif allocs is not None:
                 allocs.remove(str(action.text()))
             else:
                 allocs = []
-            __hostSearch.options['alloc'] = allocs
+            __hostSearch.options["alloc"] = allocs
 
         self.hostMonitorTree.updateRequest()
 
@@ -218,9 +207,7 @@ class HostMonitor(QtWidgets.QWidget):
         # pylint: disable=no-member
         menu = QtWidgets.QMenu(self)
         btn.setMenu(menu)
-        QtCore.QObject.connect(menu,
-                               QtCore.SIGNAL("triggered(QAction*)"),
-                               self.__filterHardwareStateHandle)
+        QtCore.QObject.connect(menu, QtCore.SIGNAL("triggered(QAction*)"), self.__filterHardwareStateHandle)
         # pylint: enable=no-member
         for item in ["Clear", None] + self.__filterHardwareStateList:
             if item:
@@ -241,7 +228,7 @@ class HostMonitor(QtWidgets.QWidget):
         menu = btn.menu()
         for action in menu.actions():
             action.setChecked(False)
-        self.hostMonitorTree.hostSearch.options['state'] = []
+        self.hostMonitorTree.hostSearch.options["state"] = []
 
     def __filterHardwareStateHandle(self, action):
         """Called when an option in the filter status menu is triggered.
@@ -253,18 +240,17 @@ class HostMonitor(QtWidgets.QWidget):
             for item in self.__filterHardwareStateButton.menu().actions():
                 if item.isChecked():
                     if item.text() != "Clear":
-                        __hostSearch.options['state'].remove(
-                            getattr(opencue.api.host_pb2, str(item.text())))
+                        __hostSearch.options["state"].remove(getattr(opencue.api.host_pb2, str(item.text())))
                     item.setChecked(False)
         else:
-            states = __hostSearch.options.get('state', [])
+            states = __hostSearch.options.get("state", [])
             if action.isChecked():
                 states.append(getattr(opencue.api.host_pb2, str(action.text())))
             elif states is not None:
                 states.remove(getattr(opencue.api.host_pb2, str(action.text())))
             else:
                 states = []
-            __hostSearch.options['state'] = states
+            __hostSearch.options["state"] = states
 
         self.hostMonitorTree.updateRequest()
 
@@ -282,9 +268,7 @@ class HostMonitor(QtWidgets.QWidget):
 
         menu = QtWidgets.QMenu(self)
         btn.setMenu(menu)
-        QtCore.QObject.connect(menu,
-                               QtCore.SIGNAL("triggered(QAction*)"),
-                               self.__filterLockStateHandle)
+        QtCore.QObject.connect(menu, QtCore.SIGNAL("triggered(QAction*)"), self.__filterLockStateHandle)
 
         for item in ["Clear", None] + self.__filterLockStateList:
             if item:
@@ -305,7 +289,7 @@ class HostMonitor(QtWidgets.QWidget):
         menu = btn.menu()
         for action in menu.actions():
             action.setChecked(False)
-        self.hostMonitorTree.hostSearch.options['lock_state'] = []
+        self.hostMonitorTree.hostSearch.options["lock_state"] = []
 
     def __filterLockStateHandle(self, action):
         """Called when an option in the filter lock state menu is triggered.
@@ -329,8 +313,7 @@ class HostMonitor(QtWidgets.QWidget):
         for item in self.__filterLockStateButton.menu().actions():
             if item.isChecked() and item.text() != "Clear":
                 # Remove the lock state from the search options
-                __hostSearch.options['lock_state'].remove(
-                    getattr(opencue.api.host_pb2, str(item.text())))
+                __hostSearch.options["lock_state"].remove(getattr(opencue.api.host_pb2, str(item.text())))
             # Uncheck the menu item
             item.setChecked(False)
 
@@ -343,7 +326,7 @@ class HostMonitor(QtWidgets.QWidget):
         @type action: QAction
         """
         # Get the current lock states from the search options
-        lock_states = __hostSearch.options.get('lock_state', [])
+        lock_states = __hostSearch.options.get("lock_state", [])
         # Get the lock state corresponding to the action text
         lock_state = getattr(opencue.api.host_pb2, str(action.text()))
 
@@ -355,7 +338,7 @@ class HostMonitor(QtWidgets.QWidget):
             lock_states.remove(lock_state)
 
         # Update the search options with the new lock states
-        __hostSearch.options['lock_state'] = lock_states
+        __hostSearch.options["lock_state"] = lock_states
 
     # ==============================================================================
     # Checkbox to toggle auto-refresh
@@ -366,9 +349,7 @@ class HostMonitor(QtWidgets.QWidget):
         layout.addWidget(checkBox)
         if self.hostMonitorTree.enableRefresh:
             checkBox.setCheckState(QtCore.Qt.Checked)
-        QtCore.QObject.connect(checkBox,
-                               QtCore.SIGNAL('stateChanged(int)'),
-                               self.__refreshToggleCheckBoxHandle)
+        QtCore.QObject.connect(checkBox, QtCore.SIGNAL("stateChanged(int)"), self.__refreshToggleCheckBoxHandle)
         __refreshToggleCheckBoxCheckBox = checkBox
         # pylint: enable=no-member
 
@@ -397,7 +378,7 @@ class HostMonitor(QtWidgets.QWidget):
     def __refreshButtonDisableHandle(self):
         """Called when the refresh button should be disabled"""
         self.btn_refresh.setEnabled(False)
-        QtCore.QTimer.singleShot(5000, self.__refreshButtonEnableHandle) # pylint: disable=no-member
+        QtCore.QTimer.singleShot(5000, self.__refreshButtonEnableHandle)  # pylint: disable=no-member
 
     # ==============================================================================
     # Button to clear all filters
@@ -409,7 +390,7 @@ class HostMonitor(QtWidgets.QWidget):
         btn = QtWidgets.QPushButton("Clear")
         btn.setMaximumHeight(FILTER_HEIGHT)
         btn.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn.setContentsMargins(0,0,0,0)
+        btn.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(btn)
         btn.clicked.connect(self.__clearButtonHandle)  # pylint: disable=no-member
 
@@ -418,7 +399,6 @@ class HostMonitor(QtWidgets.QWidget):
         self.hostMonitorTree.ticksWithoutUpdate = -1
         self.__filterAllocationClear()
         self.__filterHardwareStateClear()
-        self.__filterLockStateClear()
         self.__filterByHostNameClear()
         self.hostMonitorTree.clearFilters()
 
@@ -430,6 +410,6 @@ class HostMonitor(QtWidgets.QWidget):
 
     def __viewHostsHandle(self, hosts):
         self.__clearButtonHandle()
-        self.hostMonitorTree.hostSearch.options['host'] = hosts
+        self.hostMonitorTree.hostSearch.options["host"] = hosts
         self.__filterByHostName.setText(" ".join(hosts))
         self.hostMonitorTree.updateRequest()
