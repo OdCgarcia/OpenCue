@@ -11,19 +11,19 @@ cuegui.custom.cmd.version.beta: "echo 1.0.0"
 # Used to show the CueGUI stable version, if the environment variable OPENCUE_BETA = 0 (setenv OPENCUE_BETA 0)
 cuegui.custom.cmd.version.stable: "echo 1.0.1"
 
-logger.format: '%(levelname)-9s %(module)-10s %(message)s'
-logger.level: 'WARNING'
+logger.format: "%(levelname)-9s %(module)-10s %(message)s"
+logger.level: "WARNING"
 
 # Path for static resources like images/icons.
-paths.resources: './images'
+paths.resources: "./images"
 # Path for various config files.
-paths.config: './config'
+paths.config: "./config"
 # Path for the default application layout .ini file. If users do not have a layout stored
 # in their local filesystem, the layout stored here will be copied. This value can also
 # be set via the CUEGUI_DEFAULT_INI_PATH environment variable.
-paths.default_ini_path: './config'
+paths.default_ini_path: "./config"
 # Paths for CueGUI plugins.
-paths.plugins: ['./plugins']
+paths.plugins: ["./plugins"]
 
 # How often the UI will refresh its contents. All values in milliseconds.
 refresh.job_update_delay: 10000
@@ -36,45 +36,39 @@ refresh.min_update_interval: 5000
 # Log roots used by various operating systems. Used for remapping paths so logs produced on
 # one platform will be accessible locally.
 render_logs.root:
-  windows: 'S:'
-  mac: '/Users/shots'
-  darwin: '/Users/shots'
-  linux: '/shots'
-  rhel7: '/shots'
-  rocky9: '/shots'
+  windows: "S:"
+  mac: "/Users/shots"
+  darwin: "/Users/shots"
+  linux: "/shots"
+  rhel7: "/shots"
+  rocky9: "/shots"
 # Substrings which, when found in render logs, will cause that line to be highlighted.
-render_logs.highlight.error: [
-  'error', 'aborted', 'fatal', 'failed', 'killed', 'command not found',
-  'no licenses could be found', 'killMessage']
-render_logs.highlight.warning: ['warning', 'not found']
-render_logs.highlight.info: ['info:', 'rqd cmd:']
+render_logs.highlight.error:
+  ["error", "aborted", "fatal", "failed", "killed", "command not found", "no licenses could be found", "killMessage"]
+render_logs.highlight.warning: ["warning", "not found"]
+render_logs.highlight.info: ["info:", "rqd cmd:"]
 
 # File should be stored in paths.config.
-style.style_sheet: 'darkpalette.qss'
-style.font.family: 'Luxi Sans'
+style.style_sheet: "darkpalette.qss"
+style.font.family: "Luxi Sans"
 style.font.size: 10
-style.color_theme: 'plastique'
+style.color_theme: "plastique"
 # RGB values.
-style.colors.background: [
-  [50, 50, 100],
-  [100, 100, 50],
-  [0, 50, 0],
-  [50, 30, 0],
-]
+style.colors.background: [[50, 50, 100], [100, 100, 50], [0, 50, 0], [50, 30, 0]]
 style.colors.frame_state:
   DEAD: [255, 0, 0]
   DEPEND: [160, 32, 240]
   EATEN: [150, 0, 0]
-  RUNNING:  [200, 200, 55]
+  RUNNING: [200, 200, 55]
   SETUP: [160, 32, 240]
   SUCCEEDED: [55, 200, 55]
   WAITING: [135, 207, 235]
   CHECKPOINT: [61, 98, 247]
 
 # Default editor to use for viewing log files.
-editor.windows: 'notepad'
-editor.mac: 'open -t'
-editor.linux: 'gview -R -m -M -U {config_path}/gvimrc +'
+editor.windows: "notepad"
+editor.mac: "open -t"
+editor.linux: "gview -R -m -M -U {config_path}/gvimrc +"
 
 # Url to the sentry application dsn
 # comment out to disable sentry
@@ -86,8 +80,8 @@ resources:
   #   - layer-properties
   #   - redirect plugin
   #   - service properties
-  max_cores: 256
-  max_memory: 512
+  max_cores: 32
+  max_memory: 128
   max_gpus: 8
   max_gpu_memory: 128
   # Redirect Plugin maximum allowed core-hour cutoff.
@@ -102,21 +96,20 @@ resources:
   # threshold to -1.
   redirect_wasted_cores_threshold: 100
 
-links.user_guide: 'https://www.opencue.io/docs/'
-links.issue.create: 'https://github.com/AcademySoftwareFoundation/OpenCue/issues/new'
+links.user_guide: "https://www.opencue.io/docs/"
+links.issue.create: "https://github.com/AcademySoftwareFoundation/OpenCue/issues/new"
 # Appended to `links.issue.create`.
-links.issue.suggestion: '?labels=enhancement&template=enhancement.md'
+links.issue.suggestion: "?labels=enhancement&template=enhancement.md"
 # Appended to `links.issue.create`.
-links.issue.bug: '?labels=bug&template=bug_report.md'
+links.issue.bug: "?labels=bug&template=bug_report.md"
 
 # List of tags to be used when viewing or editing tags.
-allowed_tags: ['general', 'desktop', 'playblast', 'util', 'preprocess', 'wan', 'cuda', 'splathw',
-               'naiad', 'massive']
+allowed_tags: ["general", "desktop", "playblast", "util", "preprocess", "wan", "cuda", "splathw", "naiad", "massive"]
 
-email.subject_prefix: 'cuemail: please check '
-email.body_prefix: 'Your Support Team requests that you check '
+email.subject_prefix: "cuemail: please check "
+email.body_prefix: "Your Support Team requests that you check "
 email.body_suffix: "\n\n"
-email.domain: 'your.domain.com'
+email.domain: "your.domain.com"
 # A template for what email should be used for show support.
 #  - {domain} is required and will be replaced by email.domain
 #  - {show} is not required and will be replaced by the job show
@@ -127,7 +120,7 @@ email.show_support_cc_template: "{show}-support@{domain}"
 # notice will be shown.
 startup_notice.date: 0
 # Notice message.
-startup_notice.msg: ''
+startup_notice.msg: ""
 
 # Memory usage above this level will be displayed in a different color.
 memory_warning_level: 5242880
@@ -161,9 +154,9 @@ finished_jobs_readonly.layer: True
 # (See filter.proto/ActionType for a full list eg. SET_ALL_RENDER_LAYER_CORES,
 # MOVE_JOB_TO_GROUP, SET_ALL_RENDER_LAYER_MAX_CORES)
 # An empty string means all actions are active.
-filter_dialog.disabled_action_types: ''
+filter_dialog.disabled_action_types: ""
 
 # Define whether or not new jobs should be appended to the current list of jobs on the JobMonitor widget
 #  - True: search result will append jobs to the current list of monitored jobs
 #  - False: repopulate the jobs table with the search result
-search_jobs.append_results: True
+search_jobs.append_results: False

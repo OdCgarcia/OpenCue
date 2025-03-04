@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+import sys
+
+import cuegui.Main
+
+if __name__ == "__main__":
+    cuegui.Main.cuetopia(sys.argv)
