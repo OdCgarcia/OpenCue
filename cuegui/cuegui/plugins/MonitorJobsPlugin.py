@@ -101,23 +101,7 @@ class MonitorJobsDockWidget(cuegui.AbstractDockWidget.AbstractDockWidget):
                                       self.setGrpDependent),
                                       ("autoLoadMineCb",
                                       self.getAutoLoadMine,
-                                      self.setAutoLoadMine),
-                                      ("localNumFrames",
-                                      self.jobMonitor.getLocalPluginNumFrames,
-                                      self.jobMonitor.setLocalPluginNumFrames),
-                                      ("localNumThreads",
-                                      self.jobMonitor.getLocalPluginNumThreads,
-                                      self.jobMonitor.setLocalPluginNumThreads),
-                                      ("localNumGpus",
-                                      self.jobMonitor.getLocalPluginNumGpus,
-                                      self.jobMonitor.setLocalPluginNumGpus),
-                                      ("localNumMem",
-                                      self.jobMonitor.getLocalPluginNumMem,
-                                      self.jobMonitor.setLocalPluginNumMem),
-                                      ("localNumGpuMem",
-                                      self.jobMonitor.getLocalNumGpuMem,
-                                      self.jobMonitor.setLocalNumGpuMem),
-                                      ])
+                                      self.setAutoLoadMine)])
 
     def addJob(self, rpcObject):
         """Adds a job to be monitored."""
