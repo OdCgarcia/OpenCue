@@ -17,14 +17,8 @@
 """Provides actions and functions for right click menu items."""
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-
-from builtins import filter
-from builtins import str
-from builtins import object
 import getpass
 import glob
 import json
@@ -32,15 +26,14 @@ import os
 import re
 import subprocess
 import time
-
-from qtpy import QtGui
-from qtpy import QtWidgets
-import six
+from builtins import filter, object, str
 
 import FileSequence
 import opencue
 import opencue.compiled_proto.job_pb2
 import opencue.wrappers.depend
+import six
+from qtpy import QtGui, QtWidgets
 
 # pylint: disable=cyclic-import
 import cuegui.Action
@@ -57,15 +50,14 @@ import cuegui.LayerDialog
 import cuegui.LocalBooking
 import cuegui.Logger
 import cuegui.PreviewWidget
-import cuegui.RequestCoresDialog
 import cuegui.ProcChildren
+import cuegui.RequestCoresDialog
 import cuegui.ServiceDialog
 import cuegui.ShowDialog
 import cuegui.SubscribeToJobDialog
 import cuegui.TasksDialog
 import cuegui.UnbookDialog
 import cuegui.Utils
-
 
 logger = cuegui.Logger.getLogger(__file__)
 
@@ -773,6 +765,14 @@ class JobActions(AbstractActions):
                         # Launch RV
                         logger.info(f"Launching RV with command: {' '.join(cmd)}")
                         rv_env = self.get_rv_env()
+                        if not rv_env:
+                            QtWidgets.QMessageBox.critical(
+                                self._caller,
+                                "RV Launch Failed",
+                                "Failed to launch RV. Please check the logs for more information.",
+                                QtWidgets.QMessageBox.Ok,
+                            )
+                            return
                         subprocess.Popen(cmd, env=rv_env)
 
             except Exception as e:
