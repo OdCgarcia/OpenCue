@@ -804,6 +804,14 @@ class JobActions(AbstractActions):
                         # Launch RV
                         logger.info(f"Launching RV with command: {' '.join(cmd)}")
                         rv_env = self.get_rv_env()
+                        if not rv_env:
+                            QtWidgets.QMessageBox.critical(
+                                self._caller,
+                                "RV Launch Failed",
+                                "Failed to launch RV. Please check the logs for more information.",
+                                QtWidgets.QMessageBox.Ok,
+                            )
+                            return
                         subprocess.Popen(cmd, env=rv_env)
 
             except Exception as e:
