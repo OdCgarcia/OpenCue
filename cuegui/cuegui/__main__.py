@@ -28,13 +28,8 @@ import cuegui.Main
 
 
 def main():
-    """Entrypoint for the CueGUI/CueCommmander application."""
+    """Entrypoint for the CueGUI application."""
     cuegui.Main.cuecommander(sys.argv)
-
-
-def cuetopia():
-    """Entrypoint for the Cuetopia application."""
-    cuegui.Main.cuetopia(sys.argv)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-#  Copyright Contributors to the OpenCue Project
+# Copyright (c) 2025. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,21 +16,16 @@
 """Tree widget to display a list of monitored jobs."""
 
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-from future.utils import iteritems
-from builtins import map
 import functools
-import time
 import pickle
-
-from qtpy import QtCore
-from qtpy import QtGui
-from qtpy import QtWidgets
+import time
+from builtins import map
 
 import opencue
+from future.utils import iteritems
+from qtpy import QtCore, QtGui, QtWidgets
 
 import cuegui.AbstractTreeWidget
 import cuegui.AbstractWidgetItem
@@ -40,7 +35,6 @@ import cuegui.Logger
 import cuegui.MenuActions
 import cuegui.Style
 import cuegui.Utils
-
 
 logger = cuegui.Logger.getLogger(__file__)
 
@@ -62,11 +56,14 @@ def displayState(job):
         return "Paused"
     if job.data.job_stats.dead_frames > 0:
         return "Failing"
-    if (job.data.job_stats.depend_frames and
-        job.data.job_stats.depend_frames == job.data.job_stats.pending_frames and
-            job.data.job_stats.running_frames == 0):
+    if (
+        job.data.job_stats.depend_frames
+        and job.data.job_stats.depend_frames == job.data.job_stats.pending_frames
+        and job.data.job_stats.running_frames == 0
+    ):
         return "Dependency"
     return "In Progress"
+
 
 def sortableKey(key, datetime_key):
     """
@@ -81,8 +78,9 @@ def sortableKey(key, datetime_key):
              the 0.datetime_key summed to key if key is an int
     """
     if isinstance(key, int) and isinstance(datetime_key, int):
-        return float(str(key)+"."+str(datetime_key))
+        return float(str(key) + "." + str(datetime_key))
     return str(key) + str(datetime_key)
+
 
 class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
     """Tree widget to display a list of monitored jobs."""
@@ -95,83 +93,127 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
         self.ticksWithoutUpdate = 0
 
         self.startColumnsForType(cuegui.Constants.TYPE_JOB)
-        self.addColumn("Job", 470, id=1,
-                       data=lambda job: job.data.name,
-                       sort=lambda job: sortableKey(job.data.name, job.data.start_time),
-                       tip="The name of the job: show-shot-user_uniqueName")
-        self.addColumn("_Comment", 20, id=2,
-                       sort=lambda job: job.data.has_comment,
-                       tip="A comment icon will appear if a job has a comment. You\n"
-                           "may click on it to view the comments.")
-        self.addColumn("_Autoeat", 20, id=3,
-                       sort=lambda job: job.data.auto_eat,
-                       tip="If the job has auto eating enabled, a pac-man icon\n"
-                           "will appear here and all frames that become dead will\n"
-                           "automatically be eaten.")
+        self.addColumn(
+            "Job",
+            470,
+            id=1,
+            data=lambda job: job.data.name,
+            sort=lambda job: sortableKey(job.data.name, job.data.start_time),
+            tip="The name of the job: show-shot-user_uniqueName",
+        )
+        self.addColumn(
+            "_Comment",
+            20,
+            id=2,
+            sort=lambda job: job.data.has_comment,
+            tip="A comment icon will appear if a job has a comment. You\n" "may click on it to view the comments.",
+        )
+        self.addColumn(
+            "_Autoeat",
+            20,
+            id=3,
+            sort=lambda job: job.data.auto_eat,
+            tip="If the job has auto eating enabled, a pac-man icon\n"
+            "will appear here and all frames that become dead will\n"
+            "automatically be eaten.",
+        )
         # pylint: disable=unnecessary-lambda
-        self.addColumn("State", 80, id=4,
-                       data=lambda job: displayState(job),
-                       sort=lambda job: sortableKey(displayState(job), job.data.start_time),
-                       tip="The state of each job.\n"
-                           "In Progress \t The job is on the queue\n"
-                           "Failing \t The job has dead frames\n"
-                           "Paused \t The job has been paused\n"
-                           "Finished \t The job has finished and is no longer in the queue")
-        self.addColumn("Done/Total", 90, id=5,
-                       data=lambda job: "%d of %d" % (job.data.job_stats.succeeded_frames,
-                                                      job.data.job_stats.total_frames),
-                       sort=lambda job: sortableKey(job.data.job_stats.succeeded_frames,
-                                                    job.data.start_time),
-                       tip="The number of succeeded frames vs the total number\n"
-                           "of frames in each job.")
-        self.addColumn("Running", 60, id=6,
-                       data=lambda job: job.data.job_stats.running_frames,
-                       sort=lambda job: sortableKey(job.data.job_stats.running_frames,
-                                                    job.data.start_time),
-                       tip="The number of running frames in each job,")
-        self.addColumn("Dead", 50, id=7,
-                       data=lambda job: job.data.job_stats.dead_frames,
-                       sort=lambda job: sortableKey(job.data.job_stats.dead_frames,
-                                                    job.data.start_time),
-                       tip="Total number of dead frames in each job.")
-        self.addColumn("Eaten", 50, id=8,
-                       data=lambda job: job.data.job_stats.eaten_frames,
-                       sort=lambda job: sortableKey(job.data.job_stats.eaten_frames,
-                                                    job.data.start_time),
-                       tip="Total number of eaten frames in each job.")
-        self.addColumn("Wait", 60, id=9,
-                       data=lambda job: job.data.job_stats.waiting_frames,
-                       sort=lambda job: sortableKey(job.data.job_stats.waiting_frames,
-                                                    job.data.start_time),
-                       tip="The number of waiting frames in each job,")
-        self.addColumn("MaxRss", 55, id=10,
-                       data=lambda job: cuegui.Utils.memoryToString(job.data.job_stats.max_rss),
-                       sort=lambda job: sortableKey(job.data.job_stats.max_rss,
-                                                    job.data.start_time),
-                       tip="The maximum memory used any single frame in each job.")
-        self.addColumn("Age", 50, id=11,
-                       data=lambda job: (cuegui.Utils.secondsToHHHMM((job.data.stop_time or
-                                                               time.time()) - job.data.start_time)),
-                       sort=lambda job: ((job.data.stop_time or time.time()) - job.data.start_time),
-                       tip="The HOURS:MINUTES that the job has spent in the queue.")
-        self.addColumn("Launched", 100, id=12,
-                       data=lambda job: cuegui.Utils.dateToMMDDHHMM(job.data.start_time),
-                       sort=lambda job: job.data.start_time,
-                       tip="The time when the job was launched.")
-        self.addColumn("Finished", 100, id=13,
-                       data=lambda job: (job.data.stop_time > 0
-                                         and cuegui.Utils.dateToMMDDHHMM(job.data.stop_time)
-                                         or ""),
-                       sort=lambda job: job.data.stop_time,
-                       tip="The time when the job ended.")
-        self.addColumn("Progress", 0, id=14,
-                       delegate=cuegui.ItemDelegate.JobProgressBarDelegate,
-                       tip="A visual overview of the progress of each job.\n"
-                           "Green \t is succeeded\n"
-                           "Yellow \t is running\n"
-                           "Red \t is dead\n"
-                           "Purple \t is waiting on a dependency\n"
-                           "Light Blue \t is waiting to be booked")
+        self.addColumn(
+            "State",
+            80,
+            id=4,
+            data=lambda job: displayState(job),
+            sort=lambda job: sortableKey(displayState(job), job.data.start_time),
+            tip="The state of each job.\n"
+            "In Progress \t The job is on the queue\n"
+            "Failing \t The job has dead frames\n"
+            "Paused \t The job has been paused\n"
+            "Finished \t The job has finished and is no longer in the queue",
+        )
+        self.addColumn(
+            "Done/Total",
+            90,
+            id=5,
+            data=lambda job: "%d of %d" % (job.data.job_stats.succeeded_frames, job.data.job_stats.total_frames),
+            sort=lambda job: sortableKey(job.data.job_stats.succeeded_frames, job.data.start_time),
+            tip="The number of succeeded frames vs the total number\n" "of frames in each job.",
+        )
+        self.addColumn(
+            "Running",
+            60,
+            id=6,
+            data=lambda job: job.data.job_stats.running_frames,
+            sort=lambda job: sortableKey(job.data.job_stats.running_frames, job.data.start_time),
+            tip="The number of running frames in each job,",
+        )
+        self.addColumn(
+            "Dead",
+            50,
+            id=7,
+            data=lambda job: job.data.job_stats.dead_frames,
+            sort=lambda job: sortableKey(job.data.job_stats.dead_frames, job.data.start_time),
+            tip="Total number of dead frames in each job.",
+        )
+        self.addColumn(
+            "Eaten",
+            50,
+            id=8,
+            data=lambda job: job.data.job_stats.eaten_frames,
+            sort=lambda job: sortableKey(job.data.job_stats.eaten_frames, job.data.start_time),
+            tip="Total number of eaten frames in each job.",
+        )
+        self.addColumn(
+            "Wait",
+            60,
+            id=9,
+            data=lambda job: job.data.job_stats.waiting_frames,
+            sort=lambda job: sortableKey(job.data.job_stats.waiting_frames, job.data.start_time),
+            tip="The number of waiting frames in each job,",
+        )
+        self.addColumn(
+            "MaxRss",
+            55,
+            id=10,
+            data=lambda job: cuegui.Utils.memoryToString(job.data.job_stats.max_rss),
+            sort=lambda job: sortableKey(job.data.job_stats.max_rss, job.data.start_time),
+            tip="The maximum memory used any single frame in each job.",
+        )
+        self.addColumn(
+            "Age",
+            50,
+            id=11,
+            data=lambda job: (cuegui.Utils.secondsToHHHMM((job.data.stop_time or time.time()) - job.data.start_time)),
+            sort=lambda job: ((job.data.stop_time or time.time()) - job.data.start_time),
+            tip="The HOURS:MINUTES that the job has spent in the queue.",
+        )
+        self.addColumn(
+            "Launched",
+            100,
+            id=12,
+            data=lambda job: cuegui.Utils.dateToMMDDHHMM(job.data.start_time),
+            sort=lambda job: job.data.start_time,
+            tip="The time when the job was launched.",
+        )
+        self.addColumn(
+            "Finished",
+            100,
+            id=13,
+            data=lambda job: (job.data.stop_time > 0 and cuegui.Utils.dateToMMDDHHMM(job.data.stop_time) or ""),
+            sort=lambda job: job.data.stop_time,
+            tip="The time when the job ended.",
+        )
+        self.addColumn(
+            "Progress",
+            0,
+            id=14,
+            delegate=cuegui.ItemDelegate.JobProgressBarDelegate,
+            tip="A visual overview of the progress of each job.\n"
+            "Green \t is succeeded\n"
+            "Yellow \t is running\n"
+            "Red \t is dead\n"
+            "Purple \t is waiting on a dependency\n"
+            "Light Blue \t is waiting to be booked",
+        )
 
         cuegui.AbstractTreeWidget.AbstractTreeWidget.__init__(self, parent)
 
@@ -180,10 +222,8 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
         self.__dependentJobs = {}
         self._dependent_items = {}
         self.__reverseDependents = {}
-        self.local_plugin_saved_values = {}
         # Used to build right click context menus
-        self.__menuActions = cuegui.MenuActions.MenuActions(
-            self, self.updateSoon, self.selectedObjects)
+        self.__menuActions = cuegui.MenuActions.MenuActions(self, self.updateSoon, self.selectedObjects)
 
         self.setAcceptDrops(True)
         self.setDropIndicatorShown(True)
@@ -235,8 +275,7 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
         del col
         selected = [job.data.name for job in self.selectedObjects() if cuegui.Utils.isJob(job)]
         if selected:
-            QtWidgets.QApplication.clipboard().setText(
-                " ".join(selected), QtGui.QClipboard.Selection)
+            QtWidgets.QApplication.clipboard().setText(" ".join(selected), QtGui.QClipboard.Selection)
 
     def __itemSingleClickedComment(self, item, col):
         """If the comment column is clicked on, and there is a comment on the
@@ -270,13 +309,13 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
         """Enables or disables the autoloading of the user's jobs
         @param value: New loadMine state
         @type  value: boolean or QtCore.Qt.Checked or QtCore.Qt.Unchecked"""
-        self.__loadMine = (value is True or value == QtCore.Qt.Checked)
+        self.__loadMine = value is True or value == QtCore.Qt.Checked
 
     def setGroupDependent(self, value):
         """Enables or disables the auto grouping of the dependent jobs
         @param value: New groupDependent state
         @type  value: boolean or QtCore.Qt.Checked or QtCore.Qt.Unchecked"""
-        self.__groupDependent = (value is True or value == QtCore.Qt.Checked)
+        self.__groupDependent = value is True or value == QtCore.Qt.Checked
         self.updateRequest()
 
     def addJob(self, job, timestamp=None, loading_from_config=False):
@@ -312,9 +351,7 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
                         # to re-add them will result in duplicates that will
                         # throw off the cleanup loop at the end of this method
                         active_only = not loading_from_config
-                        dep = self.__menuActions.jobs(
-                        ).getRecursiveDependentJobs([newJobObj],
-                                                    active_only=active_only)
+                        dep = self.__menuActions.jobs().getRecursiveDependentJobs([newJobObj], active_only=active_only)
 
                         # Remove dependent if it has the same name as the job
                         # - This avoids missing jobs on MonitorJobs
@@ -410,46 +447,6 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
         """Sets the colored jobs that were saved"""
         self.__userColors = pickle.loads(bytes(state))
 
-    def getLocalPluginNumFrames(self):
-        """Gets default values for the Local Plugin fields"""
-        return self.local_plugin_saved_values["num_frames"]
-
-    def setLocalPluginNumFrames(self, value):
-        """Sets default values for the Local Plugin fields"""
-        self.local_plugin_saved_values["num_frames"] = value
-
-    def getLocalPluginNumThreads(self):
-        """Gets default values for the Local Plugin fields"""
-        return self.local_plugin_saved_values["num_threads"]
-
-    def setLocalPluginNumThreads(self, value):
-        """Sets default values for the Local Plugin fields"""
-        self.local_plugin_saved_values["num_threads"] = value
-
-    def getLocalPluginNumGpus(self):
-        """Gets default values for the Local Plugin fields"""
-        return self.local_plugin_saved_values["num_gpus"]
-
-    def setLocalPluginNumGpus(self, value):
-        """Sets default values for the LocalPlugin fields"""
-        self.local_plugin_saved_values["num_gpus"] = value
-
-    def getLocalPluginNumMem(self):
-        """Gets default values for the LocalPlugin fields"""
-        return self.local_plugin_saved_values["num_mem"]
-
-    def setLocalPluginNumMem(self, value):
-        """Sets default values for the LocalPlugin fields"""
-        self.local_plugin_saved_values["num_mem"] = value
-
-    def getLocalNumGpuMem(self):
-        """Gets default values for the LocalPlugin fields"""
-        return self.local_plugin_saved_values["num_gpu_mem"]
-
-    def setLocalNumGpuMem(self, value):
-        """Sets default values for the LocalPlugin fields"""
-        self.local_plugin_saved_values["num_gpu_mem"] = value
-
     def contextMenuEvent(self, e):
         """Creates a context menu when an item is right clicked.
         @param e: Right click QEvent
@@ -463,22 +460,23 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
 
         self.__menuActions.jobs().addAction(menu, "unmonitor")
         self.__menuActions.jobs().addAction(menu, "view")
+        self.__menuActions.jobs().addAction(menu, "previewRV")  # Add the new action here
         self.__menuActions.jobs().addAction(menu, "emailArtist")
         self.__menuActions.jobs().addAction(menu, "requestCores")
         self.__menuActions.jobs().addAction(menu, "subscribeToJob")
         self.__menuActions.jobs().addAction(menu, "viewComments")
 
-        if int(self.app.settings.value("DisableDeeding", 0)) == 0:
+        if bool(int(self.app.settings.value("AllowDeeding", 0))):
             self.__menuActions.jobs().addAction(menu, "useLocalCores")
 
         if cuegui.Constants.OUTPUT_VIEWERS:
             for viewer in cuegui.Constants.OUTPUT_VIEWERS:
-                menu.addAction(viewer['action_text'],
-                               functools.partial(cuegui.Utils.viewOutput,
-                                                 __selectedObjects,
-                                                 viewer['action_text']))
+                menu.addAction(
+                    viewer["action_text"],
+                    functools.partial(cuegui.Utils.viewOutput, __selectedObjects, viewer["action_text"]),
+                )
 
-        depend_menu = QtWidgets.QMenu("&Dependencies",self)
+        depend_menu = QtWidgets.QMenu("&Dependencies", self)
         self.__menuActions.jobs().addAction(depend_menu, "viewDepends")
         self.__menuActions.jobs().addAction(depend_menu, "dependWizard")
         depend_menu.addSeparator()
@@ -486,7 +484,7 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
         self.__menuActions.jobs().addAction(depend_menu, "dropInternalDependencies")
         menu.addMenu(depend_menu)
 
-        color_menu = QtWidgets.QMenu("&Set user color",self)
+        color_menu = QtWidgets.QMenu("&Set user color", self)
         self.__menuActions.jobs().addAction(color_menu, "setUserColor1")
         self.__menuActions.jobs().addAction(color_menu, "setUserColor2")
         self.__menuActions.jobs().addAction(color_menu, "setUserColor3")
@@ -598,8 +596,8 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
 
             if monitored_proxies:
                 for job in opencue.api.getJobs(
-                        id=[proxyId.split('.')[-1] for proxyId in monitored_proxies],
-                        include_finished=True):
+                    id=[proxyId.split(".")[-1] for proxyId in monitored_proxies], include_finished=True
+                ):
                     objectKey = cuegui.Utils.getObjectKey(job)
                     jobs[objectKey] = job
 
@@ -617,15 +615,13 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
 
         # include rpcObjects from self._items that are not in rpcObjects
         for proxy, item in list(self._items.items()):
-            if not proxy in rpcObjects:
+            if proxy not in rpcObjects:
                 rpcObjects[proxy] = item.rpcObject
         # pylint: disable=too-many-nested-blocks
         try:
-            selectedKeys = [
-                cuegui.Utils.getObjectKey(item.rpcObject) for item in self.selectedItems()]
+            selectedKeys = [cuegui.Utils.getObjectKey(item.rpcObject) for item in self.selectedItems()]
             scrolled = self.verticalScrollBar().value()
-            expanded = [cuegui.Utils.getObjectKey(item.rpcObject)
-                        for item in self._items.values() if item.isExpanded()]
+            expanded = [cuegui.Utils.getObjectKey(item.rpcObject) for item in self._items.values() if item.isExpanded()]
 
             # Store the creation time for the current item
             for item in list(self._items.values()):
@@ -638,26 +634,22 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
             self.clear()
 
             for proxy, job in iteritems(rpcObjects):
-                self._items[proxy] = JobWidgetItem(job,
-                                                   self.invisibleRootItem(),
-                                                   self.__jobTimeLoaded.get(proxy, None))
+                self._items[proxy] = JobWidgetItem(job, self.invisibleRootItem(), self.__jobTimeLoaded.get(proxy, None))
                 if proxy in self.__userColors:
                     self._items[proxy].setUserColor(self.__userColors[proxy])
                 if self.__groupDependent:
                     dependent_jobs = self.__dependentJobs.get(proxy, [])
                     for djob in dependent_jobs:
-                        item = JobWidgetItem(djob,
-                                             self._items[proxy],
-                                             self.__jobTimeLoaded.get(proxy, None))
+                        item = JobWidgetItem(djob, self._items[proxy], self.__jobTimeLoaded.get(proxy, None))
                         dkey = cuegui.Utils.getObjectKey(djob)
                         self._dependent_items[dkey] = item
                         if dkey in self.__userColors:
-                            self._dependent_items[dkey].setUserColor(
-                                           self.__userColors[dkey])
+                            self._dependent_items[dkey].setUserColor(self.__userColors[dkey])
 
             self.verticalScrollBar().setRange(scrolled, len(rpcObjects.keys()) - scrolled)
-            list(map(lambda key: self._items[key].setSelected(True),
-                     [key for key in selectedKeys if key in self._items]))
+            list(
+                map(lambda key: self._items[key].setSelected(True), [key for key in selectedKeys if key in self._items])
+            )
             list(self._items[key].setExpanded(True) for key in expanded if key in self._items)
         except opencue.exception.CueException as e:
             list(map(logger.warning, cuegui.Utils.exceptionOutput(e)))
@@ -705,8 +697,7 @@ class JobWidgetItem(cuegui.AbstractWidgetItem.AbstractWidgetItem):
         # Keeps time when job was first loaded
         self.created = created or time.time()
 
-        cuegui.AbstractWidgetItem.AbstractWidgetItem.__init__(
-            self, cuegui.Constants.TYPE_JOB, rpcObject, parent)
+        cuegui.AbstractWidgetItem.AbstractWidgetItem.__init__(self, cuegui.Constants.TYPE_JOB, rpcObject, parent)
 
     def setUserColor(self, color):
         """Sets the color scheme."""
