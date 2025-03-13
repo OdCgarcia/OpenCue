@@ -25,9 +25,9 @@ requires = [
     "NodeGraphQtPy-0.6+<1",
 ]
 
-tools = ["cuegui", "futurize", "pasteurize", "od-cuegui"]
+tools = ["cuegui"]
 
-uuid = "odstudios.cuegui"
+uuid = "repository.cuegui"
 
 build_command = "python3 {root}/build.py {install}"
 
