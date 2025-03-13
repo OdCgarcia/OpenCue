@@ -6,7 +6,6 @@ import os
 import os.path
 import pathlib
 import shutil
-import stat
 import sys
 from typing import List
 
