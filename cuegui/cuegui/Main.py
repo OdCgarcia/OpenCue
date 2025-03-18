@@ -1,4 +1,4 @@
-#  Copyright Contributors to the OpenCue Project
+# Copyright (c) 2025. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,27 +16,23 @@
 """Main entry point for the application."""
 
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import getpass
 import signal
 
-from qtpy import QtGui
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 
 import cuegui
-import cuegui.Layout
 import cuegui.Constants
+import cuegui.GarbageCollector
+import cuegui.Layout
 import cuegui.Logger
 import cuegui.MainWindow
 import cuegui.SplashWindow
 import cuegui.Style
 import cuegui.ThreadPool
 import cuegui.Utils
-import cuegui.GarbageCollector
-
 
 logger = cuegui.Logger.getLogger(__file__)
 
@@ -57,14 +53,13 @@ def startup(app_name, app_version, argv):
     app = cuegui.create_app(argv)
 
     # Start splash screen
-    splash = cuegui.SplashWindow.SplashWindow(
-        app, app_name, app_version, cuegui.Constants.RESOURCE_PATH)
+    splash = cuegui.SplashWindow.SplashWindow(app, app_name, app_version, cuegui.Constants.RESOURCE_PATH)
 
     # Allow ctrl-c to kill the application
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Load window icon
-    app.setWindowIcon(QtGui.QIcon('%s/windowIcon.png' % cuegui.Constants.RESOURCE_PATH))
+    app.setWindowIcon(QtGui.QIcon("%s/windowIcon.png" % cuegui.Constants.RESOURCE_PATH))
 
     app.setApplicationName(app_name)
     app.lastWindowClosed.connect(app.quit)  # pylint: disable=no-member
@@ -78,7 +73,7 @@ def startup(app_name, app_version, argv):
 
     cuegui.Style.init()
 
-    mainWindow = cuegui.MainWindow.MainWindow(app_name, app_version,  None)
+    mainWindow = cuegui.MainWindow.MainWindow(app_name, app_version, None)
     mainWindow.displayStartupNotice()
     mainWindow.show()
 
@@ -89,11 +84,13 @@ def startup(app_name, app_version, argv):
     # Custom qt message handler to ignore known warnings
     QtCore.qInstallMessageHandler(warning_handler)
 
-
     # Open all windows that were open when the app was last closed
     for name in mainWindow.windows_names[1:]:
-        if settings.value("%s/Open" % name, "false").lower() == 'true':
+        if settings.value("%s/Open" % name, "false").lower() == "true":
             mainWindow.windowMenuOpenWindow(name)
+
+    # Ugly hack to open the cuetopia window at the same time as the cuecommander window
+    mainWindow.windowMenuOpenWindow("CueCommander_2")
 
     # End splash screen
     splash.hide()
@@ -114,12 +111,11 @@ def __setup_sentry():
         # pylint: disable=import-outside-toplevel
         # Avoid importing sentry on the top level to make this dependency optional
         import sentry_sdk
+
         sentry_sdk.init(cuegui.Constants.SENTRY_DSN)
-        sentry_sdk.set_user({
-            'username': getpass.getuser()
-        })
+        sentry_sdk.set_user({"username": getpass.getuser()})
     except ImportError:
-        logger.warning('Failed to import Sentry')
+        logger.warning("Failed to import Sentry")
 
 
 def warning_handler(msg_type, msg_log_context, msg_string):
@@ -127,14 +123,10 @@ def warning_handler(msg_type, msg_log_context, msg_string):
     Handler qt warnings. Ignore known warning messages that happens when
     multi-threaded/multiple updates happen in a short span
     """
-    if ('QTextCursor::setPosition:' in msg_string or
-        'SelectionRequest too old' in msg_string):
+    if "QTextCursor::setPosition:" in msg_string or "SelectionRequest too old" in msg_string:
         return
 
-    logger.warning('%s: %s, Message: %s',
-                   str(msg_type),
-                   str(msg_log_context),
-                   str(msg_string))
+    logger.warning("%s: %s, Message: %s", str(msg_type), str(msg_log_context), str(msg_string))
 
 
 def closingTime():

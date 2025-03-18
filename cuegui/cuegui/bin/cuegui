@@ -2,6 +2,7 @@
 import sys
 
 import cuegui.Main
+import cuegui.MainWindow
 
 if __name__ == "__main__":
-    cuegui.Main.cuetopia(sys.argv)
+    cuegui.Main.cuecommander(sys.argv)
