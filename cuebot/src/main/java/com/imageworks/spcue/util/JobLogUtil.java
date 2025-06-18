@@ -40,9 +40,11 @@ public class JobLogUtil {
         sb.append(getJobLogRootDir(os));
         sb.append("/");
         sb.append(show);
+        sb.append("/data");
+        sb.append("/farm");
+        sb.append("/logs");
         sb.append("/");
         sb.append(shot);
-        sb.append("/logs");
         return sb.toString();
     }
 
