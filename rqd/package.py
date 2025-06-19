@@ -1,6 +1,6 @@
 name = "rqd"
 
-version = "1.4.11"
+version = "1.4.12"
 
 authors = ["Open Cue"]
 
@@ -24,4 +24,6 @@ build_command = "python3 {root}/build.py {install}"
 
 def commands():
     env.PATH.append("{root}/bin")
-    env.PYTHONPATH.prepend("{root}/lib/python3.11/site-packages")
+    env.PYTHONPATH.prepend("{root}")
+    env.PYTHONPATH.prepend("{root}/rqd/compiled_proto")
+    env.CUEBOT_HOSTNAME.set("odfarm01")

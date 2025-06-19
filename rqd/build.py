@@ -7,7 +7,6 @@ import os.path
 import shutil
 import subprocess
 import sys
-import venv
 from typing import List
 
 from loguru import logger
@@ -15,6 +14,37 @@ from loguru import logger
 
 class TestError(Exception):
     pass
+
+
+def _fix_rqd_imports(rqd_directory):
+    """Fix import statements in RQD source files to use compiled_proto instead of opencue_proto."""
+    logger.info("Fixing opencue_proto imports to use rqd.compiled_proto")
+
+    # Files that need import fixes
+    files_to_fix = ["rqcore.py", "rqmachine.py", "rqnetwork.py", "rqdservicers.py", "cuerqd.py"]
+
+    for filename in files_to_fix:
+        filepath = os.path.join(rqd_directory, filename)
+        if os.path.exists(filepath):
+            logger.info(f"Fixing imports in {filename}")
+
+            with open(filepath, "r") as f:
+                content = f.read()
+
+            # Replace opencue_proto imports with compiled_proto imports
+            # Handle both "import opencue_proto.X" and "from opencue_proto.X import Y"
+            content = content.replace("import opencue_proto.", "import rqd.compiled_proto.")
+            content = content.replace("from opencue_proto.", "from rqd.compiled_proto.")
+
+            # Also handle cases where opencue_proto is used directly (like in class inheritance)
+            content = content.replace("opencue_proto.", "rqd.compiled_proto.")
+
+            with open(filepath, "w") as f:
+                f.write(content)
+
+            logger.info(f"Updated imports in {filename}")
+        else:
+            logger.warning(f"File not found: {filepath}")
 
 
 def build(source_path: str, build_path: str, install_path: str, targets: List[str]) -> None:
@@ -25,141 +55,169 @@ def build(source_path: str, build_path: str, install_path: str, targets: List[st
 
     @logger.catch(exception=TestError, reraise=True)
     def _build():
-        # Create virtual environment in build directory
-        venv_path = os.path.join(build_path, "OpenCue-venv")
+        # Option 4 approach: Compile proto files directly
+        proto_src_path = os.path.join(os.path.dirname(source_path), "proto", "src")
+        compiled_proto_path = os.path.join(source_path, "rqd", "compiled_proto")
 
-        # Clean up any existing virtual environment before starting
-        if os.path.exists(venv_path):
-            logger.info(f"Removing existing virtual environment at {venv_path}")
-            shutil.rmtree(venv_path)
+        if os.path.exists(proto_src_path):
+            logger.info("Compiling proto files (Option 4 approach)")
 
-        logger.info(f"Creating virtual environment at {venv_path}")
-        venv.create(venv_path, with_pip=True)
+            # Create compiled_proto directory
+            if os.path.exists(compiled_proto_path):
+                shutil.rmtree(compiled_proto_path)
+            os.makedirs(compiled_proto_path, exist_ok=True)
 
-        # Get python and pip paths from the virtual environment
-        python_exe = os.path.join(venv_path, "bin", "python")
-        pip_exe = os.path.join(venv_path, "bin", "pip")
+            # Get all .proto files
+            proto_files = []
+            for file in os.listdir(proto_src_path):
+                if file.endswith(".proto"):
+                    proto_files.append(file)
 
-        logger.info(f"Using Python: {python_exe}")
-        logger.info(f"Using pip: {pip_exe}")
+            if not proto_files:
+                raise TestError("No .proto files found in proto source directory")
 
-        # Install proto package from parent directory
-        proto_path = os.path.join(os.path.dirname(source_path), "proto")
-        if os.path.exists(proto_path):
-            logger.info(f"Installing proto package from {proto_path}")
+            logger.info(f"Found proto files: {proto_files}")
+
+            # Compile proto files using grpc_tools.protoc
             try:
-                subprocess.run([pip_exe, "install", proto_path], check=True, capture_output=True, text=True)
-                logger.info("Proto package installed successfully")
+                cmd = [
+                    sys.executable,
+                    "-m",
+                    "grpc_tools.protoc",
+                    "-I=.",
+                    f"--python_out={compiled_proto_path}",
+                    f"--grpc_python_out={compiled_proto_path}",
+                ] + proto_files
+
+                logger.info(f"Running command: {' '.join(cmd)}")
+                logger.info(f"Working directory: {proto_src_path}")
+
+                result = subprocess.run(cmd, cwd=proto_src_path, check=True, capture_output=True, text=True)
+                logger.info("Proto files compiled successfully")
+                if result.stdout:
+                    logger.info(f"stdout: {result.stdout}")
+                if result.stderr:
+                    logger.info(f"stderr: {result.stderr}")
+
             except subprocess.CalledProcessError as e:
-                logger.error(f"Failed to install proto package: {e}")
+                logger.error(f"Failed to compile proto files: {e}")
                 logger.error(f"stdout: {e.stdout}")
                 logger.error(f"stderr: {e.stderr}")
-                raise TestError(f"Proto package installation failed: {e}")
-        else:
-            logger.warning(f"Proto package not found at {proto_path}, skipping...")
+                raise TestError(f"Proto compilation failed: {e}")
 
-        # Install rqd package from source
-        logger.info(f"Installing rqd package from {source_path}")
-        try:
-            subprocess.run([pip_exe, "install", source_path], check=True, capture_output=True, text=True)
-            logger.info("RQD package installed successfully")
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to install rqd package: {e}")
-            logger.error(f"stdout: {e.stdout}")
-            logger.error(f"stderr: {e.stderr}")
-            raise TestError(f"RQD package installation failed: {e}")
-
-        # Copy installed packages to build directory
-        site_packages_src = os.path.join(venv_path, "lib", "python3.11", "site-packages")
-        site_packages_dest = os.path.join(build_path, "lib", "python3.11", "site-packages")
-
-        if not os.path.exists(site_packages_src):
-            raise TestError(f"Site-packages directory not found: {site_packages_src}")
-
-        logger.info(f"Copying site-packages from {site_packages_src} to {site_packages_dest}")
-        if os.path.exists(site_packages_dest):
-            shutil.rmtree(site_packages_dest)
-
-        os.makedirs(os.path.dirname(site_packages_dest), exist_ok=True)
-        shutil.copytree(site_packages_src, site_packages_dest)
-
-        # Copy rqd executable from venv to build/bin
-        venv_bin_path = os.path.join(venv_path, "bin", "rqd")
-        build_bin_dir = os.path.join(build_path, "bin")
-        build_rqd_exe = os.path.join(build_bin_dir, "rqd")
-
-        if os.path.exists(venv_bin_path):
-            logger.info(f"Copying rqd executable from {venv_bin_path} to {build_rqd_exe}")
-            os.makedirs(build_bin_dir, exist_ok=True)
-            shutil.copy2(venv_bin_path, build_rqd_exe)
-
-            # Update the shebang to use the environment's Python
-            logger.info("Updating rqd executable shebang")
-
-            # Construct Python path from Rez environment variables
-            python_root = os.environ.get("REZ_PYTHON_ROOT")
-            if python_root:
-                python_path = os.path.join(python_root, "bin", "python3")
-                logger.info(f"Using Python path from REZ_PYTHON_ROOT: {python_path}")
+            # Fix compiled proto imports using OpenCue's fix script
+            fix_script_path = os.path.join(os.path.dirname(source_path), "proto", "fix_compiled_proto.py")
+            if os.path.exists(fix_script_path):
+                logger.info("Running fix_compiled_proto.py to fix imports")
+                try:
+                    subprocess.run(
+                        [sys.executable, fix_script_path, compiled_proto_path],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+                    logger.info("Proto imports fixed successfully")
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Failed to fix proto imports: {e}")
+                    logger.error(f"stdout: {e.stdout}")
+                    logger.error(f"stderr: {e.stderr}")
+                    raise TestError(f"Proto import fixing failed: {e}")
             else:
-                # Fallback to current executable if Rez variables not available
-                python_path = sys.executable
-                logger.info(f"REZ_PYTHON_ROOT not found, using current executable: {python_path}")
+                logger.warning(f"fix_compiled_proto.py not found at {fix_script_path}")
 
-            with open(build_rqd_exe, "r") as f:
-                content = f.read()
-
-            # Replace the shebang line
-            lines = content.split("\n")
-            if lines[0].startswith("#!"):
-                lines[0] = f"#!{python_path}"
-                logger.info(f"Updated shebang to use environment Python: {python_path}")
-            else:
-                logger.warning("No shebang found in rqd executable")
-
-            # Write the updated content back
-            with open(build_rqd_exe, "w") as f:
-                f.write("\n".join(lines))
-
-            # Make sure the executable is actually executable
-            os.chmod(build_rqd_exe, 0o755)
+            # Run 2to3 conversion on compiled proto files
+            try:
+                # Get all .py files in compiled_proto directory
+                py_files = [f for f in os.listdir(compiled_proto_path) if f.endswith(".py")]
+                if py_files:
+                    logger.info(f"Running 2to3 on {len(py_files)} Python files")
+                    subprocess.run(
+                        ["2to3", "-w", "-n"] + py_files,
+                        cwd=compiled_proto_path,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+                    logger.info("2to3 conversion completed")
+                else:
+                    logger.warning("No Python files found for 2to3 conversion")
+            except subprocess.CalledProcessError as e:
+                logger.warning(f"2to3 conversion failed or not needed: {e}")
+            except FileNotFoundError:
+                logger.warning("2to3 tool not found, skipping conversion")
         else:
-            logger.warning(f"rqd executable not found at {venv_bin_path}")
+            raise TestError(f"Proto source not found at {proto_src_path}")
 
-        # Clean up virtual environment
-        logger.info("Cleaning up virtual environment")
-        if os.path.exists(venv_path):
-            shutil.rmtree(venv_path)
+        # Copy source files to build directory (Option 4 approach - no pip needed)
+        logger.info("Copying source files to build directory")
+        rqd_src = os.path.join(source_path, "rqd")
+        rqd_dest = os.path.join(build_path, "rqd")
+
+        if os.path.exists(rqd_dest):
+            shutil.rmtree(rqd_dest)
+
+        shutil.copytree(rqd_src, rqd_dest)
+
+        # Fix imports in RQD source files to use compiled_proto instead of opencue_proto
+        logger.info("Fixing opencue_proto imports in RQD source files")
+        _fix_rqd_imports(rqd_dest)
+
+        # Create bin directory and rqd executable script
+        bin_dir = os.path.join(build_path, "bin")
+        os.makedirs(bin_dir, exist_ok=True)
+
+        rqd_exe = os.path.join(bin_dir, "rqd")
+
+        # Get Python path from environment
+        python_root = os.environ.get("REZ_PYTHON_ROOT")
+        if python_root:
+            python_path = os.path.join(python_root, "bin", "python3")
+        else:
+            python_path = sys.executable
+
+        # Create executable script (equivalent to pyproject.toml [project.scripts])
+        rqd_script = f"""#!{python_path}
+# -*- coding: utf-8 -*-
+import re
+import sys
+from rqd.__main__ import main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\\.pyw|\\.exe)?$', '', sys.argv[0])
+    sys.exit(main())
+"""
+
+        with open(rqd_exe, "w") as f:
+            f.write(rqd_script)
+
+        os.chmod(rqd_exe, 0o755)
+        logger.info(f"Created rqd executable at {rqd_exe}")
 
     def _install():
         logger.info("Installing files and directories")
 
-        # Install the Python site-packages to the install directory
-        site_packages_build = os.path.join(build_path, "lib", "python3.11", "site-packages")
-        site_packages_install = os.path.join(install_path, "lib", "python3.11", "site-packages")
+        # Install the rqd directory
+        rqd_build = os.path.join(build_path, "rqd")
+        rqd_install = os.path.join(install_path, "rqd")
 
-        if os.path.exists(site_packages_build):
-            logger.info(f"Installing site-packages from {site_packages_build} to {site_packages_install}")
-            if os.path.exists(site_packages_install):
-                shutil.rmtree(site_packages_install)
-
-            os.makedirs(os.path.dirname(site_packages_install), exist_ok=True)
-            shutil.copytree(site_packages_build, site_packages_install)
+        if os.path.exists(rqd_build):
+            logger.info(f"Installing rqd from {rqd_build} to {rqd_install}")
+            if os.path.exists(rqd_install):
+                shutil.rmtree(rqd_install)
+            shutil.copytree(rqd_build, rqd_install)
         else:
-            logger.warning(f"Site-packages build directory not found: {site_packages_build}")
+            raise TestError(f"RQD build directory not found: {rqd_build}")
 
         # Install the bin directory
-        bin_build_dir = os.path.join(build_path, "bin")
-        bin_install_dir = os.path.join(install_path, "bin")
+        bin_build = os.path.join(build_path, "bin")
+        bin_install = os.path.join(install_path, "bin")
 
-        if os.path.exists(bin_build_dir):
-            logger.info(f"Installing bin directory from {bin_build_dir} to {bin_install_dir}")
-            if os.path.exists(bin_install_dir):
-                shutil.rmtree(bin_install_dir)
-
-            shutil.copytree(bin_build_dir, bin_install_dir)
+        if os.path.exists(bin_build):
+            logger.info(f"Installing bin from {bin_build} to {bin_install}")
+            if os.path.exists(bin_install):
+                shutil.rmtree(bin_install)
+            shutil.copytree(bin_build, bin_install)
         else:
-            logger.warning(f"Bin build directory not found: {bin_build_dir}")
+            raise TestError(f"Bin build directory not found: {bin_build}")
 
     _build()
 
