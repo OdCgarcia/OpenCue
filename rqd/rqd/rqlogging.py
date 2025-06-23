@@ -1,4 +1,4 @@
-#  Copyright Contributors to the OpenCue Project
+# Copyright (c) 2025. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 """Logging module, handles logging to files and non-files"""
 
 
-import logging
-import time
-import os
 import datetime
+import logging
+import os
 import platform
+import time
 
 import rqd.rqconstants
 
@@ -30,14 +30,15 @@ log.setLevel(rqd.rqconstants.CONSOLE_LOG_LEVEL)
 
 class RqdLogger(object):
     """Class to abstract file logging, this class tries to act as a file object"""
+
     filepath = None
     fd = None
     type = 0
 
     def __init__(self, filepath):
         """RQDLogger class initialization
-           @type    filepath: string
-           @param   filepath: The filepath to log to
+        @type    filepath: string
+        @param   filepath: The filepath to log to
         """
 
         self.filepath = filepath
@@ -48,6 +49,7 @@ class RqdLogger(object):
             msg = "No Error"
             try:
                 os.makedirs(log_dir)
+                os.chmod(os.path.dirname(log_dir), 0o777)
                 os.chmod(log_dir, 0o777)
             # pylint: disable=broad-except
             except Exception as e:
@@ -56,8 +58,7 @@ class RqdLogger(object):
                 msg = e
 
             if not os.access(log_dir, os.F_OK):
-                err = "Unable to see log directory: %s, mkdir failed with: %s" % (
-                    log_dir, msg)
+                err = "Unable to see log directory: %s, mkdir failed with: %s" % (log_dir, msg)
                 raise RuntimeError(err)
 
         if not os.access(log_dir, os.W_OK):
@@ -68,11 +69,12 @@ class RqdLogger(object):
             # Rotate any old logs to a max of MAX_LOG_FILES:
             if os.path.isfile(self.filepath):
                 rotateCount = 1
-                while (os.path.isfile("%s.%s" % (self.filepath, rotateCount))
-                       and rotateCount < rqd.rqconstants.MAX_LOG_FILES):
+                while (
+                    os.path.isfile("%s.%s" % (self.filepath, rotateCount))
+                    and rotateCount < rqd.rqconstants.MAX_LOG_FILES
+                ):
                     rotateCount += 1
-                os.rename(self.filepath,
-                          "%s.%s" % (self.filepath, rotateCount))
+                os.rename(self.filepath, "%s.%s" % (self.filepath, rotateCount))
         # pylint: disable=broad-except
         except Exception as e:
             err = "Unable to rotate previous log file due to %s" % e
@@ -84,7 +86,7 @@ class RqdLogger(object):
             else:
                 raise RuntimeError(err)
         # pylint: disable=consider-using-with
-        self.fd = open(self.filepath, "w+", 1, encoding='utf-8')
+        self.fd = open(self.filepath, "w+", 1, encoding="utf-8")
         try:
             os.chmod(self.filepath, 0o666)
         # pylint: disable=broad-except
@@ -97,7 +99,7 @@ class RqdLogger(object):
         """Abstract write function that will write to the correct backend"""
         # Convert data to unicode
         if isinstance(data, bytes):
-            data = data.decode('utf-8', errors='ignore')
+            data = data.decode("utf-8", errors="ignore")
         if prependTimestamp is True:
             lines = data.splitlines()
             curr_line_timestamp = datetime.datetime.now().strftime("%H:%M:%S")
@@ -132,8 +134,10 @@ class RqdLogger(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
+
 class LokiLogger(object):
     """Class for logging to a loki server. It mimics a file object as much as possible"""
+
     def __init__(self, lokiURL, runFrame):
         try:
             # pylint: disable=import-outside-toplevel
@@ -144,12 +148,12 @@ class LokiLogger(object):
         self.runFrame = runFrame
         self.sessionStartTime = datetime.datetime.now().timestamp()
         self.defaultLogData = {
-            'host': platform.node(),
-            'job_name': self.runFrame.job_name,
-            'frame_name': self.runFrame.frame_name,
-            'username': self.runFrame.user_name,
-            'frame_id': self.runFrame.frame_id,
-            'session_start_time': str(self.sessionStartTime)
+            "host": platform.node(),
+            "job_name": self.runFrame.job_name,
+            "frame_name": self.runFrame.frame_name,
+            "username": self.runFrame.user_name,
+            "frame_id": self.runFrame.frame_id,
+            "session_start_time": str(self.sessionStartTime),
         }
 
     def waitForFile(self, maxTries=5):
@@ -171,7 +175,7 @@ class LokiLogger(object):
         if len(data.strip()) == 0:
             return
         if isinstance(data, bytes):
-            data = data.decode('utf-8', errors='ignore')
+            data = data.decode("utf-8", errors="ignore")
         requestStatus, requestCode = self.client.post(self.defaultLogData, [data.strip()])
         if requestStatus is not True:
             raise IOError(f"Failed to write log to loki server with error : {requestCode}")
