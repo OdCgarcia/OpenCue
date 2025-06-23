@@ -1,4 +1,4 @@
-#  Copyright Contributors to the OpenCue Project
+# Copyright (c) 2025. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,13 +16,7 @@
 """Machine information access module."""
 
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
-
-from builtins import str
-from builtins import range
-from builtins import object
+from __future__ import absolute_import, division, print_function
 
 import codecs
 import ctypes
@@ -37,28 +31,29 @@ import sys
 import tempfile
 import time
 import traceback
+from builtins import object, range, str
 
 # pylint: disable=import-error,wrong-import-position
-if platform.system() in ('Linux', 'Darwin'):
+if platform.system() in ("Linux", "Darwin"):
     import resource
 elif platform.system() == "Windows":
     winpsIsAvailable = False
     try:
         import winps
+
         winpsIsAvailable = True
     except ImportError:
         pass
 # pylint: enable=import-error,wrong-import-position
 
-import psutil
-
 import opencue_proto.host_pb2
 import opencue_proto.report_pb2
+import psutil
+
 import rqd.rqconstants
 import rqd.rqexceptions
 import rqd.rqswap
 import rqd.rqutil
-
 
 log = logging.getLogger(__name__)
 KILOBYTE = 1024
@@ -66,6 +61,7 @@ KILOBYTE = 1024
 
 class Machine(object):
     """Gathers information about the machine and resources"""
+
     def __init__(self, rqCore, coreInfo):
         """Machine class initialization
         @type   rqCore: rqd.rqcore.RqCore
@@ -85,7 +81,7 @@ class Machine(object):
         # { <processor> : (<physical id>, <core_id>), ... }
         self.__physid_and_coreid_by_proc = {}
 
-        if platform.system() == 'Linux':
+        if platform.system() == "Linux":
             self.__vmstat = rqd.rqswap.VmStat()
 
         self.state = opencue_proto.host_pb2.UP
@@ -124,7 +120,7 @@ class Machine(object):
     @rqd.rqutil.Memoize
     def isDesktop(self):
         """Returns True if machine starts in run level 5 (X11)
-           by checking /etc/inittab. False if not."""
+        by checking /etc/inittab. False if not."""
         if rqd.rqconstants.OVERRIDE_IS_DESKTOP:
             return True
         return False
@@ -137,8 +133,8 @@ class Machine(object):
         displayNums = []
 
         try:
-            displayRe = re.compile(r'X(\d+)')
-            for displays in os.listdir('/tmp/.X11-unix'):
+            displayRe = re.compile(r"X(\d+)")
+            for displays in os.listdir("/tmp/.X11-unix"):
                 m = displayRe.match(displays)
                 if not m:
                     continue
@@ -153,15 +149,15 @@ class Machine(object):
             # (unknown) :0           2017-11-07 18:21 (:0)
             #
             # In this example, the user is '(unknown)'.
-            for line in subprocess.check_output(['/usr/bin/who']).splitlines():
+            for line in subprocess.check_output(["/usr/bin/who"]).splitlines():
                 for displayNum in displayNums:
-                    if '(:{})'.format(displayNum) in line:
+                    if "(:{})".format(displayNum) in line:
                         cols = line.split()
                         # Acceptlist a user called '(unknown)' as this
                         # is what shows up when gdm is running and
                         # showing a login screen.
-                        if cols[0] != '(unknown)':
-                            log.warning('User %s logged into display :%s', cols[0], displayNum)
+                        if cols[0] != "(unknown)":
+                            log.warning("User %s logged into display :%s", cols[0], displayNum)
                             return True
 
             # When there is a display, the above code is considered
@@ -171,7 +167,7 @@ class Machine(object):
             return False
 
         # These process names imply a user is logged in.
-        names = {'kdesktop', 'gnome-session', 'startkde'}
+        names = {"kdesktop", "gnome-session", "startkde"}
 
         for proc in psutil.process_iter():
             procName = proc.name()
@@ -181,9 +177,9 @@ class Machine(object):
         return False
 
     def __updateGpuAndLlu(self, frame):
-        if 'GPU_LIST' in frame.runFrame.attributes:
+        if "GPU_LIST" in frame.runFrame.attributes:
             usedGpuMemory = 0
-            for unitId in frame.runFrame.attributes.get('GPU_LIST').split(','):
+            for unitId in frame.runFrame.attributes.get("GPU_LIST").split(","):
                 usedGpuMemory += self.getGpuMemoryUsed(unitId)
 
             frame.usedGpuMemory = usedGpuMemory
@@ -194,20 +190,20 @@ class Machine(object):
             frame.lluTime = int(stat)
 
     def _getStatFields(self, pidFilePath):
-        """ Read stats file and return list of values
+        """Read stats file and return list of values
         Stats file can star with these formats:
          - 105 name ...
          - 105 (name) ...
          - 105 (name with space) ...
          - 105 (name with) (space and parenthesis) ...
         """
-        with open(pidFilePath, "r", encoding='utf-8') as statFile:
+        with open(pidFilePath, "r", encoding="utf-8") as statFile:
             txt = statFile.read()
             try:
-                open_par_index = txt.index('(')
-                close_par_index = txt.rindex(')')
+                open_par_index = txt.index("(")
+                close_par_index = txt.rindex(")")
                 name = txt[open_par_index:close_par_index].strip("()")
-                reminder = (txt[0:open_par_index] + txt[close_par_index + 1:]).split()
+                reminder = (txt[0:open_par_index] + txt[close_par_index + 1 :]).split()
                 return reminder[0:1] + [name] + reminder[1:]
             except ValueError:
                 return txt.split()
@@ -215,9 +211,7 @@ class Machine(object):
     def rssUpdateWindows(self, frames):
         """Updates the rss and maxrss for all running frames on Windows"""
         values = list(frames.values())
-        pids = [frame.pid for frame in list(
-            filter(lambda frame: frame.pid > 0, values)
-        )]
+        pids = [frame.pid for frame in list(filter(lambda frame: frame.pid > 0, values))]
         # pylint: disable=no-member
         stats = winps.update(pids)
         # pylint: enable=no-member
@@ -227,13 +221,11 @@ class Machine(object):
                 stat = stats[frame.pid]
                 frame.rss = stat["rss"] // 1024
                 frame.maxRss = max(frame.rss, frame.maxRss)
-                frame.runFrame.attributes["pcpu"] = str(
-                    stat["pcpu"] * self.__coreInfo.total_cores
-                )
+                frame.runFrame.attributes["pcpu"] = str(stat["pcpu"] * self.__coreInfo.total_cores)
 
-    def collect_linux_pids_and_sessions(self, frame_pids: list[str]) -> tuple[
-            dict[str, dict[str, str]],
-            dict[str, list[str]]]:
+    def collect_linux_pids_and_sessions(
+        self, frame_pids: list[str]
+    ) -> tuple[dict[str, dict[str, str]], dict[str, list[str]]]:
         """
         Read all proc files and organize them by pids and sessionid for querying
 
@@ -246,8 +238,7 @@ class Machine(object):
         for pid in os.listdir("/proc"):
             if pid.isdigit():
                 try:
-                    statFields = self._getStatFields(rqd.rqconstants.PATH_PROC_PID_STAT
-                                                     .format(pid))
+                    statFields = self._getStatFields(rqd.rqconstants.PATH_PROC_PID_STAT.format(pid))
 
                     # Store a dict of pids per session
                     sessionid = statFields[5]
@@ -287,21 +278,26 @@ class Machine(object):
                     # 2. Collect Statm file: /proc/[pid]/statm (same as status vsize in kb)
                     #    - size: "total program size"
                     #    - rss: inaccurate, similar to VmRss in /proc/[pid]/status
-                    child_statm_fields = self._getStatFields(
-                        rqd.rqconstants.PATH_PROC_PID_STATM.format(pid))
-                    data['statm_size'] = \
-                        int(re.search(r"\d+", child_statm_fields[0]).group()) \
-                        if re.search(r"\d+", child_statm_fields[0]) else -1
-                    data['statm_rss'] = \
-                        int(re.search(r"\d+", child_statm_fields[1]).group()) \
-                        if re.search(r"\d+", child_statm_fields[1]) else -1
+                    child_statm_fields = self._getStatFields(rqd.rqconstants.PATH_PROC_PID_STATM.format(pid))
+                    log.warning(f"Child Statm Fields: {child_statm_fields}")
+                    print(f"Child Statm Fields: {child_statm_fields}")
+                    data["statm_size"] = (
+                        int(re.search(r"\d+", child_statm_fields[2]).group())
+                        if re.search(r"\d+", child_statm_fields[2])
+                        else -1
+                    )
+                    data["statm_rss"] = (
+                        int(re.search(r"\d+", child_statm_fields[3]).group())
+                        if re.search(r"\d+", child_statm_fields[3])
+                        else -1
+                    )
                     pids[pid] = data
 
                 # pylint: disable=broad-except
                 except (OSError, IOError, psutil.ZombieProcess):
                     # Many Linux processes are ephemeral and will disappear before we're able
                     # to read them. This is not typically indicative of a problem.
-                    log.debug('Failed to read stat/statm file for pid %s', pid)
+                    log.debug("Failed to read stat/statm file for pid %s", pid)
 
         # Merge direct children sessions
         for parentid, children in children.items():
@@ -314,11 +310,11 @@ class Machine(object):
 
     def rssUpdate(self, frames):
         """Updates the rss and maxrss for all running frames"""
-        if platform.system() == 'Windows' and winpsIsAvailable:
+        if platform.system() == "Windows" and winpsIsAvailable:
             self.rssUpdateWindows(frames)
             return
 
-        if platform.system() != 'Linux':
+        if platform.system() != "Linux":
             return
 
         frame_pids = [str(f.pid) for f in frames.values()]
@@ -350,24 +346,20 @@ class Machine(object):
 
                             # jiffies used by this process, last two means that dead
                             # children are counted
-                            totalTime = int(data["utime"]) + \
-                                        int(data["stime"]) + \
-                                        int(data["cutime"]) + \
-                                        int(data["cstime"])
+                            totalTime = (
+                                int(data["utime"]) + int(data["stime"]) + int(data["cutime"]) + int(data["cstime"])
+                            )
 
                             # Seconds of process life, boot time is already in seconds
-                            seconds = now - bootTime - \
-                                        float(data["start_time"]) / rqd.rqconstants.SYS_HERTZ
+                            seconds = now - bootTime - float(data["start_time"]) / rqd.rqconstants.SYS_HERTZ
                             if seconds:
                                 if child_pid in self.__pidHistory:
                                     # Percent cpu using decaying average, 50% from 10 seconds
                                     # ago, 50% from last 10 seconds:
-                                    oldTotalTime, oldSeconds, oldPidPcpu = \
-                                        self.__pidHistory[child_pid]
+                                    oldTotalTime, oldSeconds, oldPidPcpu = self.__pidHistory[child_pid]
                                     # checking if already updated data
                                     if seconds != oldSeconds:
-                                        pidPcpu = ((totalTime - oldTotalTime) /
-                                                    float(seconds - oldSeconds))
+                                        pidPcpu = (totalTime - oldTotalTime) / float(seconds - oldSeconds)
                                         pcpu += (oldPidPcpu + pidPcpu) / 2  # %cpu
                                         pidData[child_pid] = totalTime, seconds, pidPcpu
                                 else:
@@ -378,43 +370,43 @@ class Machine(object):
                             # recorded rss value
                             if child_pid in frame.childrenProcs:
                                 childRss = (int(data["rss"]) * resource.getpagesize()) // 1024
-                                if childRss > frame.childrenProcs[child_pid]['rss']:
-                                    frame.childrenProcs[child_pid]['rss_page'] = int(data["rss"])
-                                    frame.childrenProcs[child_pid]['rss'] = childRss
-                                    frame.childrenProcs[child_pid]['vsize'] = \
-                                        int(data["vsize"]) // 1024
-                                    frame.childrenProcs[child_pid]['swap'] = swap // 1024
-                                    frame.childrenProcs[child_pid]['statm_rss'] = \
-                                        (int(data["statm_rss"]) \
-                                            * resource.getpagesize()) // 1024
-                                    frame.childrenProcs[child_pid]['statm_size'] = \
-                                        (int(data["statm_size"]) * \
-                                            resource.getpagesize()) // 1024
+                                if childRss > frame.childrenProcs[child_pid]["rss"]:
+                                    frame.childrenProcs[child_pid]["rss_page"] = int(data["rss"])
+                                    frame.childrenProcs[child_pid]["rss"] = childRss
+                                    frame.childrenProcs[child_pid]["vsize"] = int(data["vsize"]) // 1024
+                                    frame.childrenProcs[child_pid]["swap"] = swap // 1024
+                                    frame.childrenProcs[child_pid]["statm_rss"] = (
+                                        int(data["statm_rss"]) * resource.getpagesize()
+                                    ) // 1024
+                                    frame.childrenProcs[child_pid]["statm_size"] = (
+                                        int(data["statm_size"]) * resource.getpagesize()
+                                    ) // 1024
                             else:
-                                frame.childrenProcs[child_pid] = \
-                                    {'name': data['name'],
-                                        'rss_page': int(data["rss"]),
-                                        'rss': (int(data["rss"]) * resource.getpagesize()) // 1024,
-                                        'vsize': int(data["vsize"])  // 1024,
-                                        'swap': swap // 1024,
-                                        'state': data['state'],
-                                        # statm reports in pages (~ 4kB)
-                                        # same as VmRss in /proc/[pid]/status (in KB)
-                                        'statm_rss': (int(data["statm_rss"]) * \
-                                                    resource.getpagesize()) // 1024,
-                                        'statm_size': (int(data["statm_size"]) * \
-                                                    resource.getpagesize()) // 1024,
-                                        'cmd_line': data["cmd_line"],
-                                        'start_time': seconds}
+                                frame.childrenProcs[child_pid] = {
+                                    "name": data["name"],
+                                    "rss_page": int(data["rss"]),
+                                    "rss": (int(data["rss"]) * resource.getpagesize()) // 1024,
+                                    "vsize": int(data["vsize"]) // 1024,
+                                    "swap": swap // 1024,
+                                    "state": data["state"],
+                                    # statm reports in pages (~ 4kB)
+                                    # same as VmRss in /proc/[pid]/status (in KB)
+                                    "statm_rss": (int(data["statm_rss"]) * resource.getpagesize()) // 1024,
+                                    "statm_size": (int(data["statm_size"]) * resource.getpagesize()) // 1024,
+                                    "cmd_line": data["cmd_line"],
+                                    "start_time": seconds,
+                                }
 
                         # pylint: disable=broad-except
                         except Exception as e:
                             log.warning(
-                                'Failure with pid rss update due to: %s at %s',
-                                e, traceback.extract_tb(sys.exc_info()[2]))
+                                "Failure with pid rss update due to: %s at %s",
+                                e,
+                                traceback.extract_tb(sys.exc_info()[2]),
+                            )
                     # convert bytes to KB
                     rss = (rss * resource.getpagesize()) // 1024
-                    vsize = int(vsize/1024)
+                    vsize = int(vsize / 1024)
                     swap = swap // 1024
 
                     frame.rss = rss
@@ -437,28 +429,28 @@ class Machine(object):
 
         # pylint: disable=broad-except
         except Exception as e:
-            log.exception('Failure with rss update due to: %s', e)
+            log.exception("Failure with rss update due to: %s", e)
 
     def _getProcSwap(self, pid):
         """Helper function to get swap memory used by a process"""
         swap_used = 0
         try:
-            with open("/proc/%s/status" % pid, "r", encoding='utf-8') as statusFile:
+            with open("/proc/%s/status" % pid, "r", encoding="utf-8") as statusFile:
                 for line in statusFile:
                     if line.startswith("VmSwap:"):
                         swap_used = int(line.split()[1])
                         break
         except FileNotFoundError:
-            log.info('Process %s terminated before swap info could be read.', pid)
+            log.info("Process %s terminated before swap info could be read.", pid)
         except Exception as e:
-            log.warning('Failed to read swap usage for pid %s: %s', pid, e)
+            log.warning("Failed to read swap usage for pid %s: %s", pid, e)
         return swap_used
 
     def getLoadAvg(self):
         """Returns average number of processes waiting to be served
-           for the last 1 minute multiplied by 100."""
+        for the last 1 minute multiplied by 100."""
         if platform.system() == "Linux":
-            with open(rqd.rqconstants.PATH_LOADAVG, "r", encoding='utf-8') as loadAvgFile:
+            with open(rqd.rqconstants.PATH_LOADAVG, "r", encoding="utf-8") as loadAvgFile:
                 loadAvg = int(float(loadAvgFile.read().split()[0]) * 100)
                 if self.__enabledHT():
                     loadAvg = loadAvg // self.getHyperthreadingMultiplier()
@@ -471,7 +463,7 @@ class Machine(object):
     def getBootTime(self):
         """Returns epoch when the system last booted"""
         if platform.system() == "Linux":
-            with open(rqd.rqconstants.PATH_STAT, "r", encoding='utf-8') as statFile:
+            with open(rqd.rqconstants.PATH_STAT, "r", encoding="utf-8") as statFile:
                 for line in statFile:
                     if line.startswith("btime"):
                         return int(line.split()[1])
@@ -480,39 +472,39 @@ class Machine(object):
     @rqd.rqutil.Memoize
     def getGpuCount(self):
         """Returns the total gpu's on the machine"""
-        return self.__getGpuValues()['count']
+        return self.__getGpuValues()["count"]
 
     @rqd.rqutil.Memoize
     def getGpuMemoryTotal(self):
         """Returns the total gpu memory in kb for CUE_GPU_MEMORY"""
-        return self.__getGpuValues()['total']
+        return self.__getGpuValues()["total"]
 
     def getGpuMemoryFree(self):
         """Returns the available gpu memory in kb for CUE_GPU_MEMORY"""
-        return self.__getGpuValues()['free']
+        return self.__getGpuValues()["free"]
 
     def getGpuMemoryUsed(self, unitId):
         """Returns the available gpu memory in kb for CUE_GPU_MEMORY"""
-        usedMemory = self.__getGpuValues()['used']
+        usedMemory = self.__getGpuValues()["used"]
         return usedMemory[unitId] if unitId in usedMemory else 0
 
     # pylint: disable=attribute-defined-outside-init
     def __resetGpuResults(self):
-        self.gpuResults = {'count': 0, 'total': 0, 'free': 0, 'used': {}, 'updated': 0}
+        self.gpuResults = {"count": 0, "total": 0, "free": 0, "used": {}, "updated": 0}
 
     def __getGpuValues(self):
-        if not hasattr(self, 'gpuNotSupported'):
-            if not hasattr(self, 'gpuResults'):
+        if not hasattr(self, "gpuNotSupported"):
+            if not hasattr(self, "gpuResults"):
                 self.__resetGpuResults()
             if not rqd.rqconstants.ALLOW_GPU:
                 self.gpuNotSupported = True
                 return self.gpuResults
-            if self.gpuResults['updated'] > int(time.time()) - 60:
+            if self.gpuResults["updated"] > int(time.time()) - 60:
                 return self.gpuResults
             try:
                 nvidia_smi = subprocess.getoutput(
-                    'nvidia-smi --query-gpu=memory.total,memory.free,count'
-                    ' --format=csv,noheader')
+                    "nvidia-smi --query-gpu=memory.total,memory.free,count" " --format=csv,noheader"
+                )
                 total = 0
                 free = 0
                 count = 0
@@ -526,20 +518,18 @@ class Machine(object):
                     total += unitTotal
                     free += unitFree
                     count = int(l[-1])
-                    self.gpuResults['used'][str(unitId)] = unitTotal - unitFree
+                    self.gpuResults["used"][str(unitId)] = unitTotal - unitFree
                     unitId += 1
 
-                self.gpuResults['total'] = int(total)
-                self.gpuResults['free'] = int(free)
-                self.gpuResults['count'] = count
-                self.gpuResults['updated'] = int(time.time())
+                self.gpuResults["total"] = int(total)
+                self.gpuResults["free"] = int(free)
+                self.gpuResults["count"] = count
+                self.gpuResults["updated"] = int(time.time())
             # pylint: disable=broad-except
             except Exception as e:
                 self.gpuNotSupported = True
                 self.__resetGpuResults()
-                log.warning(
-                    'Failed to query nvidia-smi due to: %s at %s',
-                    e, traceback.extract_tb(sys.exc_info()[2]))
+                log.warning("Failed to query nvidia-smi due to: %s at %s", e, traceback.extract_tb(sys.exc_info()[2]))
         else:
             self.__resetGpuResults()
         return self.gpuResults
@@ -556,9 +546,9 @@ class Machine(object):
     @rqd.rqutil.Memoize
     def getTimezone(self):
         """Returns the desired timezone"""
-        if time.tzname[0] == 'IST':
-            return 'IST'
-        return 'PST8PDT'
+        if time.tzname[0] == "IST":
+            return "IST"
+        return "PST8PDT"
 
     @rqd.rqutil.Memoize
     def getHostname(self):
@@ -569,26 +559,26 @@ class Machine(object):
     def getPathEnv(self):
         """Returns the correct path environment for the given machine"""
         if rqd.rqconstants.RQD_USE_PATH_ENV_VAR:
-            return os.getenv('PATH')
-        if platform.system() == 'Linux':
-            return '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
-        if platform.system() == 'Windows':
-            return 'C:/Windows/system32;C:/Windows;C:/Windows/System32/Wbem'
-        return ''
+            return os.getenv("PATH")
+        if platform.system() == "Linux":
+            return "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        if platform.system() == "Windows":
+            return "C:/Windows/system32;C:/Windows;C:/Windows/System32/Wbem"
+        return ""
 
     @rqd.rqutil.Memoize
     def getTempPath(self):
         """Returns the correct mcp path for the given machine"""
         if os.path.isdir("/mcp/"):
             return "/mcp/"
-        return '%s/' % tempfile.gettempdir()
+        return "%s/" % tempfile.gettempdir()
 
     def reboot(self):
         """Reboots the machine immediately"""
         if platform.system() == "Linux":
             log.warning("Rebooting machine")
             # pylint: disable=consider-using-with
-            subprocess.Popen(['/usr/bin/sudo', '/sbin/reboot', '-f'])
+            subprocess.Popen(["/usr/bin/sudo", "/sbin/reboot", "-f"])
 
     # pylint: disable=no-member
     def __initMachineTags(self):
@@ -603,7 +593,7 @@ class Machine(object):
         if self.isDesktop():
             self.__renderHost.tags.append("desktop")
 
-        if platform.system() == 'Windows':
+        if platform.system() == "Windows":
             self.__renderHost.tags.append("windows")
             return
 
@@ -623,7 +613,7 @@ class Machine(object):
         self.__renderHost.name = self.getHostname()
         self.__renderHost.boot_time = self.getBootTime()
         self.__renderHost.facility = rqd.rqconstants.DEFAULT_FACILITY
-        self.__renderHost.attributes['SP_OS'] = rqd.rqconstants.SP_OS
+        self.__renderHost.attributes["SP_OS"] = rqd.rqconstants.SP_OS
 
         self.updateMachineStats()
 
@@ -638,8 +628,7 @@ class Machine(object):
             self.__physid_and_coreid_by_proc = {}
 
             # Reads static information from /proc/cpuinfo
-            with open(pathCpuInfo or rqd.rqconstants.PATH_CPUINFO, "r",
-                      encoding='utf-8') as cpuinfoFile:
+            with open(pathCpuInfo or rqd.rqconstants.PATH_CPUINFO, "r", encoding="utf-8") as cpuinfoFile:
                 currCore = {}
                 procsFound = []
                 for line in cpuinfoFile:
@@ -648,30 +637,34 @@ class Machine(object):
                     if len(lineList) >= 2:
                         currCore[lineList[0]] = lineList[1]
                     # The end of a processor block
-                    elif lineList == ['']:
+                    elif lineList == [""]:
                         # Check for hyper-threading
-                        hyperthreadingMultiplier = (int(currCore.get('siblings', '1'))
-                                                    // int(currCore.get('cpu cores', '1')))
+                        hyperthreadingMultiplier = int(currCore.get("siblings", "1")) // int(
+                            currCore.get("cpu cores", "1")
+                        )
 
                         __totalCores += rqd.rqconstants.CORE_VALUE
-                        if "core id" in currCore \
-                                and "physical id" in currCore \
-                                and not currCore["physical id"] in procsFound:
+                        if (
+                            "core id" in currCore
+                            and "physical id" in currCore
+                            and currCore["physical id"] not in procsFound
+                        ):
                             procsFound.append(currCore["physical id"])
                             __numProcs += 1
                         elif "core id" not in currCore:
                             __numProcs += 1
 
-                        if 'physical id' in currCore and 'core id' in currCore:
+                        if "physical id" in currCore and "core id" in currCore:
                             # Keep track of what processors are on which core on
                             # which physical socket.
                             procid, physid, coreid = (
-                                currCore['processor'],
-                                currCore['physical id'],
-                                currCore['core id'])
-                            self.__procs_by_physid_and_coreid \
-                                .setdefault(physid, {}) \
-                                .setdefault(coreid, set()).add(procid)
+                                currCore["processor"],
+                                currCore["physical id"],
+                                currCore["core id"],
+                            )
+                            self.__procs_by_physid_and_coreid.setdefault(physid, {}).setdefault(coreid, set()).add(
+                                procid
+                            )
                             self.__physid_and_coreid_by_proc[procid] = physid, coreid
                         currCore = {}
 
@@ -689,7 +682,7 @@ class Machine(object):
         else:
             hyperthreadingMultiplier = 1
 
-        if platform.system() == 'Windows':
+        if platform.system() == "Windows":
             logicalCoreCount, __numProcs, hyperthreadingMultiplier = self.__initStatsFromWindows()
             __totalCores = logicalCoreCount * rqd.rqconstants.CORE_VALUE
 
@@ -719,7 +712,7 @@ class Machine(object):
         self.__renderHost.cores_per_proc = __totalCores // __numProcs
 
         if hyperthreadingMultiplier >= 1:
-            self.__renderHost.attributes['hyperthreadingMultiplier'] = str(hyperthreadingMultiplier)
+            self.__renderHost.attributes["hyperthreadingMultiplier"] = str(hyperthreadingMultiplier)
 
     def __initStatsFromWindows(self):
         """Init machine stats for Windows platforms.
@@ -771,9 +764,9 @@ class Machine(object):
 
             for coreId in range(processor.NumberOfCores):
                 for _ in range(threadPerCore):
-                    self.__procs_by_physid_and_coreid.setdefault(
-                        str(physicalId), {}
-                    ).setdefault(str(coreId), set()).add(str(procId))
+                    self.__procs_by_physid_and_coreid.setdefault(str(physicalId), {}).setdefault(
+                        str(coreId), set()
+                    ).add(str(procId))
                     self.__physid_and_coreid_by_proc[str(procId)] = (
                         str(physicalId),
                         str(coreId),
@@ -784,22 +777,26 @@ class Machine(object):
         """Gets information on system memory, Windows compatible version."""
         # From
         # http://stackoverflow.com/questions/2017545/get-memory-usage-of-computer-in-windows-with-python
-        if not hasattr(self, '__windowsStat'):
+        if not hasattr(self, "__windowsStat"):
+
             class MEMORYSTATUSEX(ctypes.Structure):
                 """Represents Windows memory information."""
-                _fields_ = [("dwLength", ctypes.c_uint),
-                            ("dwMemoryLoad", ctypes.c_uint),
-                            ("ullTotalPhys", ctypes.c_ulonglong),
-                            ("ullAvailPhys", ctypes.c_ulonglong),
-                            ("ullTotalPageFile", ctypes.c_ulonglong),
-                            ("ullAvailPageFile", ctypes.c_ulonglong),
-                            ("ullTotalVirtual", ctypes.c_ulonglong),
-                            ("ullAvailVirtual", ctypes.c_ulonglong),
-                            ("sullAvailExtendedVirtual", ctypes.c_ulonglong),]
+
+                _fields_ = [
+                    ("dwLength", ctypes.c_uint),
+                    ("dwMemoryLoad", ctypes.c_uint),
+                    ("ullTotalPhys", ctypes.c_ulonglong),
+                    ("ullAvailPhys", ctypes.c_ulonglong),
+                    ("ullTotalPageFile", ctypes.c_ulonglong),
+                    ("ullAvailPageFile", ctypes.c_ulonglong),
+                    ("ullTotalVirtual", ctypes.c_ulonglong),
+                    ("ullAvailVirtual", ctypes.c_ulonglong),
+                    ("sullAvailExtendedVirtual", ctypes.c_ulonglong),
+                ]
 
                 def __init__(self):
                     # have to initialize this to the size of MEMORYSTATUSEX
-                    self.dwLength = 2*4 + 7*8     # size = 2 ints, 7 longs
+                    self.dwLength = 2 * 4 + 7 * 8  # size = 2 ints, 7 longs
                     super(MEMORYSTATUSEX, self).__init__()
 
             self.__windowsStat = MEMORYSTATUSEX()
@@ -808,31 +805,31 @@ class Machine(object):
 
     def updateMacMemory(self):
         """Updates the internal store of memory available, macOS compatible version."""
-        memsizeOutput = subprocess.getoutput('sysctl hw.memsize').strip()
-        memsizeRegex = re.compile(r'^hw.memsize: (?P<totalMemBytes>[\d]+)$')
+        memsizeOutput = subprocess.getoutput("sysctl hw.memsize").strip()
+        memsizeRegex = re.compile(r"^hw.memsize: (?P<totalMemBytes>[\d]+)$")
         memsizeMatch = memsizeRegex.match(memsizeOutput)
         if memsizeMatch:
-            self.__renderHost.total_mem = int(memsizeMatch.group('totalMemBytes')) // 1024
+            self.__renderHost.total_mem = int(memsizeMatch.group("totalMemBytes")) // 1024
         else:
             self.__renderHost.total_mem = 0
 
-        vmStatLines = subprocess.getoutput('vm_stat').split('\n')
-        lineRegex = re.compile(r'^(?P<field>.+):[\s]+(?P<pages>[\d]+).$')
+        vmStatLines = subprocess.getoutput("vm_stat").split("\n")
+        lineRegex = re.compile(r"^(?P<field>.+):[\s]+(?P<pages>[\d]+).$")
         vmStats = {}
         for line in vmStatLines[1:-2]:
             match = lineRegex.match(line)
             if match:
-                vmStats[match.group('field')] = int(match.group('pages')) * 4096
+                vmStats[match.group("field")] = int(match.group("pages")) * 4096
 
         freeMemory = vmStats.get("Pages free", 0) // 1024
         inactiveMemory = vmStats.get("Pages inactive", 0) // 1024
         self.__renderHost.free_mem = freeMemory + inactiveMemory
 
-        swapStats = subprocess.getoutput('sysctl vm.swapusage').strip()
-        swapRegex = re.compile(r'^.* free = (?P<freeMb>[\d]+)M .*$')
+        swapStats = subprocess.getoutput("sysctl vm.swapusage").strip()
+        swapRegex = re.compile(r"^.* free = (?P<freeMb>[\d]+)M .*$")
         swapMatch = swapRegex.match(swapStats)
         if swapMatch:
-            self.__renderHost.free_swap = int(float(swapMatch.group('freeMb')) * 1024)
+            self.__renderHost.free_swap = int(float(swapMatch.group("freeMb")) * 1024)
         else:
             self.__renderHost.free_swap = 0
 
@@ -844,7 +841,7 @@ class Machine(object):
             self.__renderHost.free_mcp = (mcpStat.f_bavail * mcpStat.f_bsize) // KILOBYTE
 
             # Reads dynamic information from /proc/meminfo
-            with open(rqd.rqconstants.PATH_MEMINFO, "r", encoding='utf-8') as fp:
+            with open(rqd.rqconstants.PATH_MEMINFO, "r", encoding="utf-8") as fp:
                 for line in fp:
                     if line.startswith("MemFree"):
                         freeMem = int(line.split()[1])
@@ -861,12 +858,12 @@ class Machine(object):
             self.__renderHost.total_gpu_mem = self.getGpuMemoryTotal()
             self.__renderHost.free_gpu_mem = self.getGpuMemoryFree()
 
-            self.__renderHost.attributes['swapout'] = self.__getSwapout()
+            self.__renderHost.attributes["swapout"] = self.__getSwapout()
 
-        elif platform.system() == 'Darwin':
+        elif platform.system() == "Darwin":
             self.updateMacMemory()
 
-        elif platform.system() == 'Windows':
+        elif platform.system() == "Windows":
             TEMP_DEFAULT = 1048576
             stats = self.getWindowsMemory()
             self.__renderHost.free_mcp = TEMP_DEFAULT
@@ -891,7 +888,7 @@ class Machine(object):
         """Updates and returns the hostReport struct"""
         self.__hostReport.host.CopyFrom(self.getHostInfo())
 
-        self.__hostReport.ClearField('frames')
+        self.__hostReport.ClearField("frames")
         self.__rqCore.sanitizeFrames()
         for frameKey in self.__rqCore.getFrameKeys():
             try:
@@ -911,25 +908,25 @@ class Machine(object):
         return self.__bootReport
 
     def __enabledHT(self):
-        return 'hyperthreadingMultiplier' in self.__renderHost.attributes
+        return "hyperthreadingMultiplier" in self.__renderHost.attributes
 
     def getHyperthreadingMultiplier(self):
         """
         Multiplied used to compute the number of threads that can be allocated simultaneously
         on a core
         """
-        return int(self.__renderHost.attributes['hyperthreadingMultiplier'])
+        return int(self.__renderHost.attributes["hyperthreadingMultiplier"])
 
     def setupTaskset(self):
-        """ Setup rqd for hyper-threading """
+        """Setup rqd for hyper-threading"""
         self.__coreInfo.reserved_cores.clear()
 
     def setupGpu(self):
-        """ Setup rqd for Gpus """
+        """Setup rqd for Gpus"""
         self.__gpusets = set(range(self.getGpuCount()))
 
     def reserveHT(self, frameCores):
-        """ Reserve cores for use by taskset
+        """Reserve cores for use by taskset
         taskset -c 0,1,8,9 COMMAND
         Not thread save, use with locking.
         @type   frameCores: int
@@ -939,9 +936,9 @@ class Machine(object):
         """
 
         if frameCores % 100:
-            log.warning('Taskset: Can not reserveHT with fractional cores')
+            log.warning("Taskset: Can not reserveHT with fractional cores")
             return None
-        log.info('Taskset: Requesting reserve of %d', (frameCores // 100))
+        log.info("Taskset: Requesting reserve of %d", (frameCores // 100))
 
         # Look for the most idle physical cpu.
         # Prefer to assign cores from the same physical cpu.
@@ -952,8 +949,7 @@ class Machine(object):
 
         for physid, cores in self.__procs_by_physid_and_coreid.items():
             for coreid in cores.keys():
-                if int(physid) in reserved_cores and \
-                        int(coreid) in reserved_cores[int(physid)].coreid:
+                if int(physid) in reserved_cores and int(coreid) in reserved_cores[int(physid)].coreid:
                     continue
                 avail_cores.setdefault(physid, set()).add(coreid)
                 avail_cores_count += 1
@@ -961,20 +957,22 @@ class Machine(object):
         remaining_cores = frameCores / 100
 
         if avail_cores_count < remaining_cores:
-            err = ('Not launching, insufficient hyperthreading cores to reserve '
-                   'based on frameCores (%s < %s)')  \
-                  % (avail_cores_count, remaining_cores)
+            err = ("Not launching, insufficient hyperthreading cores to reserve " "based on frameCores (%s < %s)") % (
+                avail_cores_count,
+                remaining_cores,
+            )
             log.critical(err)
             raise rqd.rqexceptions.CoreReservationFailureException(err)
 
         tasksets = []
 
         for physid, cores in sorted(
-                avail_cores.items(),
-                # Return the physical socket that has
-                # the most idle cores first.
-                key=lambda tup: len(tup[1]),
-                reverse=True):
+            avail_cores.items(),
+            # Return the physical socket that has
+            # the most idle cores first.
+            key=lambda tup: len(tup[1]),
+            reverse=True,
+        ):
 
             while remaining_cores > 0 and len(cores) > 0:
                 coreid = cores.pop()
@@ -989,26 +987,26 @@ class Machine(object):
             if remaining_cores == 0:
                 break
 
-        log.warning('Taskset: Reserving procs - %s', ','.join(tasksets))
+        log.warning("Taskset: Reserving procs - %s", ",".join(tasksets))
 
-        return ','.join(tasksets)
+        return ",".join(tasksets)
 
     # pylint: disable=inconsistent-return-statements
     def releaseHT(self, reservedHT):
-        """ Release cores used by taskset
+        """Release cores used by taskset
         Format: 0,1,8,9
         Not thread safe, use with locking.
         @type:  string
         @param: The cpu-list used for taskset to release. ex: '0,8,1,9'
         """
 
-        log.debug('Taskset: Releasing cores - %s', reservedHT)
+        log.debug("Taskset: Releasing cores - %s", reservedHT)
 
         # Remove these cores from the reserved set.
         # Silently ignore any that weren't really reserved or
         # aren't valid core identities.
         reserved_cores = self.__coreInfo.reserved_cores
-        for core in reservedHT.split(','):
+        for core in reservedHT.split(","):
             physical_id_str, core_id_str = self.__physid_and_coreid_by_proc.get(core)
             physical_id = int(physical_id_str)
             core_id = int(core_id_str)
@@ -1019,14 +1017,14 @@ class Machine(object):
                     del reserved_cores[physical_id]
 
     def reserveGpus(self, reservedGpus):
-        """ Reserve gpus
+        """Reserve gpus
         @type   reservedGpus: int
         @param  reservedGpus: The total gpus reserved by the frame.
         @rtype:  string
         @return: The gpu-list. ex: '0,1,8,9'
         """
         if len(self.__gpusets) < reservedGpus:
-            err = 'Not launching, insufficient GPUs to reserve based on reservedGpus'
+            err = "Not launching, insufficient GPUs to reserve based on reservedGpus"
             log.critical(err)
             raise rqd.rqexceptions.CoreReservationFailureException(err)
 
@@ -1035,14 +1033,14 @@ class Machine(object):
             gpu = self.__gpusets.pop()
             gpusets.append(str(gpu))
 
-        return ','.join(gpusets)
+        return ",".join(gpusets)
 
     def releaseGpus(self, reservedGpus):
-        """ Release gpus
+        """Release gpus
         @type:  string
         @param: The gpu-list to release. ex: '0,1,8,9'
         """
-        log.debug('GPU set: Releasing gpu - %s', reservedGpus)
-        for gpu in reservedGpus.split(','):
+        log.debug("GPU set: Releasing gpu - %s", reservedGpus)
+        for gpu in reservedGpus.split(","):
             if int(gpu) < self.getGpuCount():
                 self.__gpusets.add(int(gpu))
