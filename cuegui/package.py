@@ -12,8 +12,8 @@ build_requires = ["cmake-3", "python-3.11", "PySide6-6+<7"]
 
 requires = [
     "python-3.11",
-    "pyoutline-1.0.0",
-    "pycue-1.0.0",
+    "pyoutline-1.4.11",
+    "pycue-1.4.11",
     "PySide6-6+<7",
     "cuebot-1.4.11",
     "QtPy-2+<3",
