@@ -1,6 +1,6 @@
 name = "cuegui"
 
-version = "1.1.2"
+version = "1.4.11"
 
 authors = ["Open Cue"]
 
@@ -15,7 +15,7 @@ requires = [
     "pyoutline-1.0.0",
     "pycue-1.0.0",
     "PySide6-6+<7",
-    "cuebot-1.0.0",
+    "cuebot-1.4.11",
     "QtPy-2+<3",
     "grpcio_tools-1+<2",
     "future-1+<2",
