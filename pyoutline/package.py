@@ -12,7 +12,7 @@ build_requires = ["python-3.11", "loguru"]
 
 requires = [
     "python-3.11",
-    "pycue-1.0.0",
+    "pycue-1.4.11",
 ]
 
 tools = ["pycuerun"]
