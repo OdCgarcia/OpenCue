@@ -8,15 +8,16 @@ description = """
     Python API for OpenCue.
     """
 
-build_requires = ["python-3.11", "grpcio_tools-1+<2", "loguru"]
+build_requires = ["python-3.11", "loguru"]
 
 requires = [
     "python-3.11",
-    "grpcio-1+<2",
     "PyYAML-6+<7",
     "six-1+<2",
     "future-1+<2",
 ]
+
+private_build_requires = ["grpcio_tools-1+<2", "grpcio-1+<2"]
 
 uuid = "repository.pycue"
 
