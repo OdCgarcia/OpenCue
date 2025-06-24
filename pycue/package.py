@@ -1,0 +1,28 @@
+name = "pycue"
+
+version = "1.4.11"
+
+authors = ["Open Cue"]
+
+description = """
+    Python API for OpenCue.
+    """
+
+build_requires = ["python-3.11", "grpcio_tools-1+<2", "loguru"]
+
+requires = [
+    "python-3.11",
+    "grpcio-1+<2",
+    "PyYAML-6+<7",
+    "six-1+<2",
+    "future-1+<2",
+]
+
+uuid = "repository.pycue"
+
+build_command = "python3 {root}/build.py {install}"
+
+
+def commands():
+    env.PYTHONPATH.prepend("{root}")
+    env.CUEBOT_HOSTS.set("odfarm01")
