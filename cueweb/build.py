@@ -23,7 +23,18 @@ def build(source_path: str, build_path: str, install_path: str, targets: List[st
     logger.info(f"Targets -> {targets}")
 
     # Define what gets copied to the final package
-    build_artifacts = ["bin", ".next", "package.json", "package-lock.json", "next.config.js", "public"]
+    build_artifacts = [
+        "bin",
+        ".next",
+        "package.json",
+        "package-lock.json",
+        "next.config.js",
+        "public",
+        "app",
+        "lib",
+        "components",
+        # Note: node_modules should be installed fresh on target system, not copied
+    ]
 
     def _build():
         logger.info("Building CueWeb using npm")
@@ -82,16 +93,22 @@ def build(source_path: str, build_path: str, install_path: str, targets: List[st
                 "NODE_ENV": "production",
                 "NEXT_TELEMETRY_DISABLED": "1",
                 "SENTRYCLI_SKIP_DOWNLOAD": "1",
-                # Set default build-time environment variables
-                "NEXTAUTH_URL": "http://localhost:3000",
-                "NEXTAUTH_SECRET": "build-time-secret",
-                "NEXT_JWT_SECRET": "build-time-jwt-secret",
-                "NEXT_AUTH_OKTA_CLIENT_ID": "build-time-okta-id",
-                "NEXT_AUTH_OKTA_ISSUER": "https://build-time.okta.com",
-                "NEXT_AUTH_OKTA_CLIENT_SECRET": "build-time-okta-secret",
-                "NEXT_PUBLIC_URL": "http://localhost:3000",
-                "NEXT_PUBLIC_OPENCUE_ENDPOINT": "http://localhost:8080",
-                "NEXT_PUBLIC_AUTH_PROVIDER": "google,okta,github",
+                # Use environment variables from rez package, with fallbacks only for build-time necessities
+                "NEXTAUTH_URL": os.environ.get("NEXTAUTH_URL", "http://localhost:3000"),
+                "NEXTAUTH_SECRET": os.environ.get("NEXTAUTH_SECRET", "build-time-secret"),
+                "NEXT_JWT_SECRET": os.environ.get("NEXT_JWT_SECRET", "build-time-jwt-secret"),
+                "NEXT_AUTH_OKTA_CLIENT_ID": os.environ.get("NEXT_AUTH_OKTA_CLIENT_ID", "build-time-okta-id"),
+                "NEXT_AUTH_OKTA_ISSUER": os.environ.get("NEXT_AUTH_OKTA_ISSUER", "https://build-time.okta.com"),
+                "NEXT_AUTH_OKTA_CLIENT_SECRET": os.environ.get(
+                    "NEXT_AUTH_OKTA_CLIENT_SECRET", "build-time-okta-secret"
+                ),
+                "NEXT_PUBLIC_URL": os.environ.get("NEXT_PUBLIC_URL", "http://localhost:3000"),
+                # NOTE: This overrides the NEXT_PUBLIC_OPENCUE_ENDPOINT from package.py
+                # The rez package environment variables are not properly passed to Next.js build
+                "NEXT_PUBLIC_OPENCUE_ENDPOINT": "http://10.0.5.31:8448",
+                "NEXT_PUBLIC_AUTH_PROVIDER": os.environ.get("NEXT_PUBLIC_AUTH_PROVIDER", "google,okta,github"),
+                "GOOGLE_CLIENT_ID": os.environ.get("GOOGLE_CLIENT_ID", ""),
+                "GOOGLE_CLIENT_SECRET": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
             }
         )
 
@@ -189,14 +206,33 @@ if [ -z "$NEXT_PUBLIC_OPENCUE_ENDPOINT" ] || [ -z "$NEXT_JWT_SECRET" ]; then
     exit 1
 fi
 
+# Change to CueWeb directory
+cd "$CUEWEB_ROOT"
+
+# Check if node_modules exists and has the next binary
+if [ ! -f "node_modules/.bin/next" ]; then
+    echo "Installing Node.js dependencies..."
+    if ! command -v npm &> /dev/null; then
+        echo "Error: npm is not available. Please install Node.js and npm."
+        exit 1
+    fi
+    
+    # Install dependencies
+    npm ci --production=false --silent
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to install dependencies"
+        exit 1
+    fi
+    echo "Dependencies installed successfully"
+fi
+
 # Set the port for Next.js
 export PORT="$CUEWEB_PORT"
 
 echo "Starting CueWeb on ${CUEWEB_HOST}:${CUEWEB_PORT}"
 echo "CueWeb root: $CUEWEB_ROOT"
 
-# Change to CueWeb directory and start the application
-cd "$CUEWEB_ROOT"
+# Start the application
 exec npm run "$COMMAND" -- --port "$CUEWEB_PORT" --hostname "$CUEWEB_HOST"
 """
 

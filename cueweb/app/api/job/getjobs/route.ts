@@ -14,12 +14,14 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   const endpoint = "/job.JobInterface/GetJobs";
   const method = request.method;
+  
   if (method !== 'POST') {
     return NextResponse.json({ error: 'Invalid method. Only POST is allowed.' }, { status: 405 });
   }
 
   const body = JSON.stringify(await request.json());
   const jsonBody = JSON.parse(body);
+  
   if (!jsonBody || typeof jsonBody !== 'object' || !jsonBody.r) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }

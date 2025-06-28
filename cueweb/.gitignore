@@ -3,3 +3,6 @@
 .sentryclirc
 .env.local
 /coverage
+/build
+/.next
+/node_modules

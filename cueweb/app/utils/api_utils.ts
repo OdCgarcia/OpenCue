@@ -24,7 +24,8 @@ export async function fetchObjectFromRestGateway(
     body: string
   ): Promise<NextResponse> {
     const NEXT_PUBLIC_OPENCUE_ENDPOINT = process.env.NEXT_PUBLIC_OPENCUE_ENDPOINT;
-    const url = `${NEXT_PUBLIC_OPENCUE_ENDPOINT}${endpoint}`;
+    const baseUrl = NEXT_PUBLIC_OPENCUE_ENDPOINT || "http://10.0.5.31:8448";
+    const url = `${baseUrl}${endpoint}`;
   
     const jwtParams: JwtParams = {
       sub: "user-id", // Replace with a user id
@@ -36,7 +37,7 @@ export async function fetchObjectFromRestGateway(
   
     try {
       const response = await fetch(url, {
-        method: method,
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${jwtToken}`,
@@ -60,6 +61,14 @@ export async function fetchObjectFromRestGateway(
 // Create the JWT token given the payload parameters
 export function createJwtToken({ sub, role, iat, exp }: JwtParams): string {
     const NEXT_JWT_SECRET = process.env.NEXT_JWT_SECRET;
+    
+    // Check if NEXT_JWT_SECRET is actually a JWT token (starts with "eyJ")
+    // If so, use it directly instead of trying to sign a new one
+    if (NEXT_JWT_SECRET && NEXT_JWT_SECRET.startsWith("eyJ")) {
+        return NEXT_JWT_SECRET;
+    }
+    
+    // Otherwise, create a new JWT token using the secret
     const payload = { sub, role, iat, exp };
     return jwt.sign(payload, NEXT_JWT_SECRET as string);
   }
