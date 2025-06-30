@@ -501,6 +501,7 @@ class JobMonitorTree(cuegui.AbstractTreeWidget.AbstractTreeWidget):
 
         self.__menuActions.jobs().addAction(menu, "unmonitor")
         self.__menuActions.jobs().addAction(menu, "view")
+        self.__menuActions.jobs().addAction(menu, "copyXMLPath")
         self.__menuActions.jobs().addAction(menu, "previewRV")  # Add the new action here
         self.__menuActions.jobs().addAction(menu, "emailArtist")
         self.__menuActions.jobs().addAction(menu, "requestCores")
