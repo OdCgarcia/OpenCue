@@ -1,6 +1,6 @@
 name = "cuegui"
 
-version = "1.4.11"
+version = "1.5.0"
 
 authors = ["Open Cue"]
 

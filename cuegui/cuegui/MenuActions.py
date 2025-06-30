@@ -761,6 +761,50 @@ class JobActions(AbstractActions):
     def clearUserColor(self, rpcObjects=None):
         self._caller.actionSetUserColor(None)
 
+    copyXMLPath_info = ["Copy XML Path", "Copy the XML path of the job to the clipboard", "view"]
+
+    def copyXMLPath(self, rpcObjects=None):
+        jobs = self._getOnlyJobObjects(rpcObjects)
+        if jobs:
+            try:
+                layers = jobs[0].getLayers()
+                if layers:
+                    xml_file_path = None
+                    for layer in layers:
+                        first_frame = layer.getFrames()[0]
+                        log_path = cuegui.Utils.getFrameLogFile(jobs[0], first_frame)
+
+                        if os.path.exists(log_path):
+                            with open(log_path, "r", errors="ignore") as f:
+                                content = f.read()
+                                # Look for OUTLINE_XML_FILE in the log
+                                match = re.search(r"OUTLINE_XML_FILE=([^\s\n]+)", content)
+                                if match:
+                                    xml_file_path = match.group(1)
+                                    break  # Found XML path, exit the loop
+
+                    if xml_file_path:
+                        QtWidgets.QApplication.clipboard().setText(xml_file_path, QtGui.QClipboard.Clipboard)
+                        QtWidgets.QMessageBox.information(
+                            self._caller,
+                            "XML Path Copied",
+                            f"XML path copied to clipboard:\n{xml_file_path}",
+                            QtWidgets.QMessageBox.Ok,
+                        )
+                    else:
+                        QtWidgets.QMessageBox.warning(
+                            self._caller,
+                            "XML Path Not Found",
+                            "Could not find XML path in the job logs.",
+                            QtWidgets.QMessageBox.Ok,
+                        )
+            except Exception as e:
+                logger.exception("Failed to read log file for XML path")
+                QtWidgets.QMessageBox.critical(
+                    self._caller, "Error", f"Failed to read log file: {str(e)}", QtWidgets.QMessageBox.Ok
+                )
+                return
+
     previewRV_info = ["Preview in RV", "Preview job in RV viewer", "view"]
 
     def previewRV(self, rpcObjects=None):
