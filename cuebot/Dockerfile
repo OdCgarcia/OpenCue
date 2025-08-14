@@ -12,8 +12,10 @@ WORKDIR /home/gradle/cuebot
 
 RUN gradle build --info --stacktrace
 
+ARG BUILD_ID
+
 COPY --chown=gradle:gradle VERSION.in ./
-RUN test -e VERSION || echo "$(cat VERSION.in)-custom" | tee VERSION
+RUN if [ -n "${BUILD_ID}" ]; then echo "${BUILD_ID}" > VERSION; else echo "$(cat VERSION.in)-custom" > VERSION; fi
 RUN mv ./build/libs/cuebot.jar ./build/libs/cuebot-$(cat ./VERSION)-all.jar
 
 
@@ -42,7 +44,7 @@ RUN chmod +x create_rpm.sh && ./create_rpm.sh cuebot "$(cat VERSION)"
 # -----------------
 # RUN
 # -----------------
-FROM openjdk:18-slim-buster
+FROM openjdk:18-slim-bullseye
 
 # Install curl for healthchecking
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
