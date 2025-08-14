@@ -19,6 +19,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+import ast
 import getpass
 import glob
 import json
@@ -821,27 +822,73 @@ class JobActions(AbstractActions):
 
                         # Find OUTPUT_PATH in the log file
                         output_path = None
+                        is_quoted_format = False
 
                         if os.path.exists(log_path):
                             with open(log_path, "r", errors="ignore") as f:
                                 content = f.read()
-                                # Look for OUTPUT_PATH in the log
-                                match = re.search(r"OUTPUT_PATH=([^\s\n]+)", content)
+                                # Look for OUTPUT_PATH in the log - try quoted format first (list), then unquoted (single value)
+                                is_quoted_format = False
+                                match = re.search(r"OUTPUT_PATH='(.*?)'(?:\s|$)", content, re.DOTALL)
                                 if match:
+                                    is_quoted_format = True
                                     output_path = match.group(1)
+                                else:
+                                    # Try unquoted format for single values
+                                    match = re.search(r"OUTPUT_PATH=([^\s\n]+)", content)
+                                    if match:
+                                        output_path = match.group(1)
 
                         if not output_path:
                             QtWidgets.QMessageBox.warning(
                                 self._caller,
                                 "Output Path Not Found",
-                                "Could not find output path in the render log. Only available for Nuke jobs.",
+                                "Could not find output path in the render log.",
                                 QtWidgets.QMessageBox.Ok,
                             )
                             return
                         else:
+                            if is_quoted_format:
+                                # Handle shell-escaped quotes: '"'"' -> '
+                                output_path = output_path.replace("'\"'\"'\"'", "'")
+                                output_path = ast.literal_eval(output_path)
+                                # Remove extra double quotes from each path in the list
+                                if isinstance(output_path, list):
+                                    output_path = [path.strip("\"'") for path in output_path]
+                            # If not quoted format, output_path is already a plain string path
+
+                            if isinstance(output_path, list):
+                                # ask the user which one to preview.
+                                if not output_path:
+                                    QtWidgets.QMessageBox.warning(
+                                        self._caller,
+                                        "No Output Paths",
+                                        "Render log reported an empty list of output paths.",
+                                        QtWidgets.QMessageBox.Ok,
+                                    )
+                                    return
+                                # Ensure all entries are strings for display
+                                output_items = [str(p) for p in output_path]
+                                # Offer a choice dialog
+                                choice, ok = QtWidgets.QInputDialog.getItem(
+                                    self._caller,
+                                    "Select Output Path",
+                                    "Select render output to preview:",
+                                    output_items,
+                                    0,
+                                    False,
+                                )
+                                if not ok:
+                                    # User cancelled selection
+                                    return
+
+                                output_path = choice
+
                             # Convert %04d pattern to # for RV
                             if "%" in output_path:
                                 output_path = re.sub(r"%\d*d", "#", output_path)
+                            elif "$F" in output_path:
+                                output_path = re.sub(r"\$F\d*", "#", output_path)
 
                             cmd = ["rv", output_path]
 
@@ -857,6 +904,8 @@ class JobActions(AbstractActions):
                             )
                             return
                         subprocess.Popen(cmd, env=rv_env)
+
+                        break  # Only launch RV for the first layer found
 
             except Exception as e:
                 logger.exception("Failed to launch RV")
