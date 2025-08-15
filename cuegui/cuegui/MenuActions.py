@@ -861,8 +861,8 @@ class JobActions(AbstractActions):
                         if not output_path:
                             QtWidgets.QMessageBox.warning(
                                 self._caller,
-                                "Output Path Not Found",
-                                "Could not find output path in the render log.",
+                                "Job not supported",
+                                "This job is not supported for RV preview.",
                                 QtWidgets.QMessageBox.Ok,
                             )
                             return
