@@ -27,3 +27,11 @@ cuebot/.project
 /pycue/opencue/compiled_proto/
 /rqd/rqd/compiled_proto/
 cuebot/pyrightconfig.json
+cueweb/pyrightconfig.json
+docker-compose-local.yml
+docs/_site/
+docs/bin/
+sandbox/kafka-data
+sandbox/zookeeper-data
+sandbox/zookeeper-logs
+docs/_data/version.yml
