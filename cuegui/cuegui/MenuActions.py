@@ -832,6 +832,8 @@ class JobActions(AbstractActions):
                         # Find OUTPUT_PATH in the log file
                         output_path = None
                         is_quoted_format = False
+                        job_name = None
+                        shot = None
 
                         if os.path.exists(log_path):
                             with open(log_path, "r", errors="ignore") as f:
@@ -847,6 +849,14 @@ class JobActions(AbstractActions):
                                     match = re.search(r"OUTPUT_PATH=([^\s\n]+)", content)
                                     if match:
                                         output_path = match.group(1)
+
+                                match_shot = re.search(r"shot=([^\s\n]+)", content)
+                                if match_shot:
+                                    shot = match_shot.group(1).replace("_", "/")
+
+                                match_job = re.search(r"show=([^\s\n]+)", content)
+                                if match_job:
+                                    job_name = match_job.group(1)
 
                         if not output_path:
                             QtWidgets.QMessageBox.warning(
@@ -876,22 +886,35 @@ class JobActions(AbstractActions):
                                         QtWidgets.QMessageBox.Ok,
                                     )
                                     return
-                                # Ensure all entries are strings for display
-                                output_items = [str(p) for p in output_path]
-                                # Offer a choice dialog
-                                choice, ok = QtWidgets.QInputDialog.getItem(
-                                    self._caller,
-                                    "Select Output Path",
-                                    "Select render output to preview:",
-                                    output_items,
-                                    0,
-                                    False,
-                                )
-                                if not ok:
-                                    # User cancelled selection
-                                    return
 
-                                output_path = choice
+                                print(f"Job: {job_name}, Shot: {shot}")
+                                if len(output_path) == 1:
+                                    output_path = output_path[0]
+
+                                elif job_name and shot:
+                                    start_path = f"/jobs/{job_name}/{shot}/"
+                                    print(f"Looking for paths starting with: {start_path}")
+                                    output_path = [p for p in output_path if p.startswith(start_path)]
+                                    if len(output_path) == 1:
+                                        output_path = output_path[0]
+
+                                if isinstance(output_path, list):
+                                    # Ensure all entries are strings for display
+                                    output_items = [str(p) for p in output_path]
+                                    # Offer a choice dialog
+                                    choice, ok = QtWidgets.QInputDialog.getItem(
+                                        self._caller,
+                                        "Select Output Path",
+                                        "Select render output to preview:",
+                                        output_items,
+                                        0,
+                                        False,
+                                    )
+                                    if not ok:
+                                        # User cancelled selection
+                                        return
+
+                                    output_path = choice
 
                             # Convert %04d pattern to # for RV
                             if "%" in output_path:
