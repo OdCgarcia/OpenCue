@@ -133,22 +133,29 @@ public class CoreUnitDispatcher implements Dispatcher {
     }
 
     private List<VirtualProc> dispatchJobs(DispatchHost host, Set<String> jobs) {
+        logger.trace(
+                "dispatchJobs called for " + host.getName() + " with " + jobs.size() + " jobs");
         List<VirtualProc> procs = new ArrayList<VirtualProc>();
 
         try {
             for (String jobid : jobs) {
+                logger.trace("Processing job " + jobid + " for host " + host.getName());
 
                 if (!host.hasAdditionalResources(CORE_POINTS_RESERVED_MIN, MEM_RESERVED_MIN,
                         GPU_UNITS_RESERVED_MIN, MEM_GPU_RESERVED_MIN)) {
+                    logger.trace("Host " + host.getName() + " has no additional resources");
                     return procs;
                 }
 
                 if (procs.size() >= getIntProperty("dispatcher.host_frame_dispatch_max")) {
+                    logger.trace("Reached host frame dispatch max for host " + host.getName());
                     break;
                 }
 
                 if (getIntProperty("dispatcher.job_lock_expire_seconds") > 0) {
+                    logger.trace("Checking job lock for job " + jobid);
                     if (getOrCreateJobLock().getIfPresent(jobid) != null) {
+                        logger.trace("Job " + jobid + " is locked, skipping");
                         continue;
                     }
 
@@ -206,12 +213,23 @@ public class CoreUnitDispatcher implements Dispatcher {
 
     @Override
     public List<VirtualProc> dispatchHost(DispatchHost host) {
+        logger.trace("dispatchHost called for " + host.getName());
 
         Set<String> jobs = getGpuJobs(host, null);
 
-        if (jobs == null)
+        if (jobs == null) {
+            logger.trace("No GPU jobs found, searching for standard jobs for " + host.getName());
             jobs = dispatchSupport.findDispatchJobs(host,
                     getIntProperty("dispatcher.job_query_max"));
+        } else {
+            logger.trace("Found GPU jobs for " + host.getName() + ": " + jobs.size());
+        }
+
+        if (jobs.isEmpty()) {
+            logger.trace("No jobs found for " + host.getName());
+        } else {
+            logger.trace("Found " + jobs.size() + " jobs for " + host.getName());
+        }
 
         return dispatchJobs(host, jobs);
     }
@@ -241,10 +259,13 @@ public class CoreUnitDispatcher implements Dispatcher {
 
     @Override
     public List<VirtualProc> dispatchHost(DispatchHost host, JobInterface job) {
+        logger.trace("dispatchHost(host, job) called for " + host.getName() + " and job "
+                + job.getName());
 
         List<VirtualProc> procs = new ArrayList<VirtualProc>();
 
         if (host.strandedCores == 0 && dispatchSupport.isShowAtOrOverBurst(job, host)) {
+            logger.trace("Show is at or over burst for job " + job.getName());
             return procs;
         }
 
