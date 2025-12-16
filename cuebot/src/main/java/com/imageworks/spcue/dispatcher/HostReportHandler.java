@@ -243,14 +243,22 @@ public class HostReportHandler {
             int coresToReserve =
                     host.handleNegativeCoresRequirement(Dispatcher.CORE_POINTS_RESERVED_MIN);
 
+            logger.trace("Host " + host.getName() + " needs to reserve " + coresToReserve
+                    + " cores to be bookable.");
+
             if (hasLocalJob) {
+                logger.trace("Host " + host.getName() + " has local job");
                 List<LocalHostAssignment> lcas = bookingManager.getLocalHostAssignment(host);
                 for (LocalHostAssignment lca : lcas) {
                     bookingManager.removeInactiveLocalHostAssignment(lca);
                 }
             }
+            logger.trace("Getting mem_reserved_min property");
             long memReservedMin =
                     env.getRequiredProperty("dispatcher.memory.mem_reserved_min", Long.class);
+
+            logger.trace("Host " + host.getName() + " needs to have at least " + memReservedMin
+                    + "MB of free memory to be bookable.");
 
             if (!isTempDirStorageEnough(report.getHost().getTotalMcp(),
                     report.getHost().getFreeMcp(), host.getOs())) {
@@ -285,8 +293,11 @@ public class HostReportHandler {
             if (msg != null) {
                 logger.trace(msg);
             } else {
+                logger.trace(host.getName() + " passed booking requirements");
                 // check again. The dangling local host assignment could be removed.
                 hasLocalJob = bookingManager.hasLocalHostAssignment(host);
+
+                logger.trace("Host " + host.getName() + " hasLocalJob: " + hasLocalJob);
 
                 /*
                  * Check to see if a local job has been assigned.
@@ -295,6 +306,7 @@ public class HostReportHandler {
                     if (!bookingManager.hasResourceDeficit(host)) {
                         bookingQueue.execute(new DispatchBookHostLocal(host, localDispatcher));
                     }
+                    logger.trace("Host " + host.getName() + " booked for local job assignment.");
                     return;
                 }
 
@@ -304,8 +316,12 @@ public class HostReportHandler {
                 if (hostManager.isPreferShow(host)) {
                     bookingQueue.execute(new DispatchBookHost(host,
                             hostManager.getPreferredShow(host), dispatcher, env));
+
+                    logger.trace("Host " + host.getName() + " booked for preferred show.");
                     return;
                 }
+
+                logger.trace("Host " + host.getName() + " booked for normal booking.");
 
                 bookingQueue.execute(new DispatchBookHost(host, dispatcher, env));
             }
