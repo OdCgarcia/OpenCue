@@ -95,9 +95,8 @@ public class HostReportHandler {
     private PrometheusMetricsCollector prometheusMetrics;
 
     // Comment constants
-    private static final String SUBJECT_COMMENT_FULL_TEMP_DIR =
-            "Host set to REPAIR for not having enough storage "
-                    + "space on the temporary directory (mcp)";
+    private static final String SUBJECT_COMMENT_FULL_TEMP_DIR = "Host set to REPAIR for not having enough storage "
+            + "space on the temporary directory (mcp)";
     private static final String CUEBOT_COMMENT_USER = "cuebot";
     private static final String WINDOWS_OS = "Windows";
 
@@ -125,7 +124,8 @@ public class HostReportHandler {
     }
 
     /**
-     * Shutdown this handler so it no longer accepts packets. Any call to queue a host report will
+     * Shutdown this handler so it no longer accepts packets. Any call to queue a
+     * host report will
      * throw an exception.
      */
     public synchronized void shutdown() {
@@ -161,6 +161,8 @@ public class HostReportHandler {
 
     public void handleHostReport(HostReport report, boolean isBoot) {
         long startTime = System.currentTimeMillis();
+        logger.trace("Handling host report for: " + report.getHost().getName());
+
         try {
             long swapOut = 0;
             if (report.getHost().getAttributesMap().containsKey("swapout")) {
@@ -188,7 +190,8 @@ public class HostReportHandler {
                 changeNimbyState(host, report.getHost());
 
                 /**
-                 * This should only happen at boot time or it will fight with the dispatcher over
+                 * This should only happen at boot time or it will fight with the dispatcher
+                 * over
                  * row locks.
                  */
                 if (isBoot) {
@@ -203,17 +206,19 @@ public class HostReportHandler {
 
                 host = hostManager.createHost(report);
             } catch (Exception e) {
-                logger.warn("Error processing HostReport, " + e);
+                logger.error("Error processing HostReport for " + report.getHost().getName(), e);
                 return;
             }
 
             /*
-             * Verify all the frames in the report are valid. Frames that are not valid are removed.
+             * Verify all the frames in the report are valid. Frames that are not valid are
+             * removed.
              */
             List<RunningFrameInfo> runningFrames = verifyRunningFrameInfo(report);
 
             /*
-             * Updates memory usage for the proc, frames, jobs, and layers. And LLU time for the
+             * Updates memory usage for the proc, frames, jobs, and layers. And LLU time for
+             * the
              * frames.
              */
             updateMemoryUsageAndLluTime(runningFrames);
@@ -224,21 +229,24 @@ public class HostReportHandler {
             killTimedOutFrames(runningFrames, report.getHost().getName());
 
             /*
-             * Prevent OOM (Out-Of-Memory) issues on the host and manage frame reserved memory
+             * Prevent OOM (Out-Of-Memory) issues on the host and manage frame reserved
+             * memory
              */
             handleMemoryUsage(host, report.getHost(), runningFrames);
 
             /*
-             * The checks are done in order of least CPU intensive to most CPU intensive, saving
+             * The checks are done in order of least CPU intensive to most CPU intensive,
+             * saving
              * checks that hit the DB for last.
              *
-             * These are done so we don't populate the booking queue with a bunch of hosts that
+             * These are done so we don't populate the booking queue with a bunch of hosts
+             * that
              * can't be booked.
              */
             String msg = null;
             boolean hasLocalJob = bookingManager.hasLocalHostAssignment(host);
-            int coresToReserve =
-                    host.handleNegativeCoresRequirement(Dispatcher.CORE_POINTS_RESERVED_MIN);
+            logger.trace("Checking booking requirements for " + host.getName());
+            int coresToReserve = host.handleNegativeCoresRequirement(Dispatcher.CORE_POINTS_RESERVED_MIN);
 
             if (hasLocalJob) {
                 List<LocalHostAssignment> lcas = bookingManager.getLocalHostAssignment(host);
@@ -246,8 +254,7 @@ public class HostReportHandler {
                     bookingManager.removeInactiveLocalHostAssignment(lca);
                 }
             }
-            long memReservedMin =
-                    env.getRequiredProperty("dispatcher.memory.mem_reserved_min", Long.class);
+            long memReservedMin = env.getRequiredProperty("dispatcher.memory.mem_reserved_min", Long.class);
 
             if (!isTempDirStorageEnough(report.getHost().getTotalMcp(),
                     report.getHost().getFreeMcp(), host.getOs())) {
@@ -320,15 +327,18 @@ public class HostReportHandler {
     }
 
     /**
-     * Check if a reported temp storage size and availability is enough for running a job
+     * Check if a reported temp storage size and availability is enough for running
+     * a job
      *
-     * Use dispatcher.min_available_temp_storage_percentage (opencue.properties) to define what's
-     * the accepted threshold. Providing hostOs is necessary as this feature is currently not
+     * Use dispatcher.min_available_temp_storage_percentage (opencue.properties) to
+     * define what's
+     * the accepted threshold. Providing hostOs is necessary as this feature is
+     * currently not
      * available on Windows hosts
      *
      * @param tempTotalStorage Total storage on the temp directory
-     * @param tempFreeStorage Free storage on the temp directory
-     * @param hostOs Reported operational systems
+     * @param tempFreeStorage  Free storage on the temp directory
+     * @param hostOs           Reported operational systems
      * @return
      */
     private boolean isTempDirStorageEnough(Long tempTotalStorage, Long tempFreeStorage,
@@ -347,9 +357,12 @@ public class HostReportHandler {
     /**
      * Update the hardware state property.
      *
-     * If a host pings in with a different hardware state than what is currently in the DB, the
-     * state is updated. If the hardware state is Rebooting or RebootWhenIdle, then state can only
-     * be updated with a boot report. If the state is Repair, then state is never updated via RQD.
+     * If a host pings in with a different hardware state than what is currently in
+     * the DB, the
+     * state is updated. If the hardware state is Rebooting or RebootWhenIdle, then
+     * state can only
+     * be updated with a boot report. If the state is Repair, then state is never
+     * updated via RQD.
      *
      * @param host
      * @param reportState
@@ -387,10 +400,14 @@ public class HostReportHandler {
     /**
      * Prevent cue frames from booking on hosts with full temporary directories.
      *
-     * Change host state to REPAIR or UP according to the amount of free space in the temporary
-     * directory: - Set the host state to REPAIR, when the amount of free space in the temporary
-     * directory is less than the minimum required. - Set the host state to UP, when the amount of
-     * free space in the temporary directory is greater or equal to the minimum required and the
+     * Change host state to REPAIR or UP according to the amount of free space in
+     * the temporary
+     * directory: - Set the host state to REPAIR, when the amount of free space in
+     * the temporary
+     * directory is less than the minimum required. - Set the host state to UP, when
+     * the amount of
+     * free space in the temporary directory is greater or equal to the minimum
+     * required and the
      * host has a comment with subject: SUBJECT_COMMENT_FULL_TEMP_DIR
      *
      * @param host
@@ -412,9 +429,8 @@ public class HostReportHandler {
             c.subject = SUBJECT_COMMENT_FULL_TEMP_DIR;
             c.user = CUEBOT_COMMENT_USER;
             c.timestamp = null;
-            long requiredTempMb =
-                    (long) (((minAvailableTempPercentage / 100.0) * reportHost.getTotalMcp())
-                            / 1024);
+            long requiredTempMb = (long) (((minAvailableTempPercentage / 100.0) * reportHost.getTotalMcp())
+                    / 1024);
             c.message = "Host " + host.getName()
                     + " marked as REPAIR. The current amount of free space in the "
                     + "temporary directory (mcp) is " + (reportHost.getFreeMcp() / 1024)
@@ -445,8 +461,10 @@ public class HostReportHandler {
     }
 
     /**
-     * Changes the NIMBY lock state. If the DB indicates a NIMBY lock but RQD does not, then the
-     * host is unlocked. If the DB indicates the host is not locked but RQD indicates it is, the
+     * Changes the NIMBY lock state. If the DB indicates a NIMBY lock but RQD does
+     * not, then the
+     * host is unlocked. If the DB indicates the host is not locked but RQD
+     * indicates it is, the
      * host is locked.
      *
      * @param host
@@ -467,10 +485,11 @@ public class HostReportHandler {
     }
 
     /**
-     * Changes the Lock state of the host. Looks at the number of locked cores and sets host to
+     * Changes the Lock state of the host. Looks at the number of locked cores and
+     * sets host to
      * locked if all cores are locked.
      *
-     * @param host DispatchHost
+     * @param host     DispatchHost
      * @param coreInfo CoreDetail
      */
     private void changeLockState(DispatchHost host, CoreDetail coreInfo) {
@@ -486,12 +505,18 @@ public class HostReportHandler {
     }
 
     /**
-     * Prevent host from entering an OOM state where oom-killer might start killing important OS
-     * processes and frames start using SWAP memory The kill logic will kick in one of the following
-     * conditions is met: - Host has less than oom_max_safe_used_physical_memory_threshold memory
-     * available and less than oom_max_safe_used_swap_memory_threshold swap available - A frame is
-     * taking more than OOM_FRAME_OVERBOARD_PERCENT of what it had reserved For frames that are
-     * using more than they had reserved but not above the threshold, negotiate expanding the
+     * Prevent host from entering an OOM state where oom-killer might start killing
+     * important OS
+     * processes and frames start using SWAP memory The kill logic will kick in one
+     * of the following
+     * conditions is met: - Host has less than
+     * oom_max_safe_used_physical_memory_threshold memory
+     * available and less than oom_max_safe_used_swap_memory_threshold swap
+     * available - A frame is
+     * taking more than OOM_FRAME_OVERBOARD_PERCENT of what it had reserved For
+     * frames that are
+     * using more than they had reserved but not above the threshold, negotiate
+     * expanding the
      * reservations with other frames on the same host
      *
      * @param dispatchHost
@@ -538,8 +563,7 @@ public class HostReportHandler {
                     + physMemoryUsageRatio + ", swapRatio: " + swapMemoryUsageRatio);
             // Try to kill frames using swap memory as they are probably performing poorly
             long swapUsed = renderHost.getTotalSwap() - renderHost.getFreeSwap();
-            long maxSwapUsageAllowed =
-                    (long) (renderHost.getTotalSwap() * OOM_MAX_SAFE_USED_SWAP_THRESHOLD);
+            long maxSwapUsageAllowed = (long) (renderHost.getTotalSwap() * OOM_MAX_SAFE_USED_SWAP_THRESHOLD);
 
             // Sort runningFrames bassed on how much swap they are using
             runningFrames.sort(
@@ -584,10 +608,13 @@ public class HostReportHandler {
 
     public enum KillCause {
         FrameOverboard("This frame is using more memory than it had reserved."), HostUnderOom(
-                "Frame killed by host under OOM pressure"), FrameTimedOut(
-                        "Frame timed out"), FrameLluTimedOut(
-                                "Frame LLU timed out"), FrameVerificationFailure(
-                                        "Frame failed to be verified on the database");
+                "Frame killed by host under OOM pressure"),
+        FrameTimedOut(
+                "Frame timed out"),
+        FrameLluTimedOut(
+                "Frame LLU timed out"),
+        FrameVerificationFailure(
+                "Frame failed to be verified on the database");
 
         private final String message;
 
@@ -622,8 +649,7 @@ public class HostReportHandler {
 
     private boolean getKillClearance(String hostname, String frameId) {
         String cacheKey = hostname + "-" + frameId;
-        final int FRAME_KILL_RETRY_LIMIT =
-                env.getRequiredProperty("dispatcher.frame_kill_retry_limit", Integer.class);
+        final int FRAME_KILL_RETRY_LIMIT = env.getRequiredProperty("dispatcher.frame_kill_retry_limit", Integer.class);
 
         // Cache frame+host receiving a killRequest and count how many times the request
         // is being retried
@@ -700,7 +726,8 @@ public class HostReportHandler {
     }
 
     /**
-     * Check frame memory usage comparing the amount used with the amount it had reserved
+     * Check frame memory usage comparing the amount used with the amount it had
+     * reserved
      *
      * @param frame
      * @return
@@ -805,8 +832,7 @@ public class HostReportHandler {
 
             try {
                 LayerDetail layer = layerDao.getLayerDetail(layerId);
-                long runtimeMinutes =
-                        ((System.currentTimeMillis() - frame.getStartTime()) / 1000l) / 60;
+                long runtimeMinutes = ((System.currentTimeMillis() - frame.getStartTime()) / 1000l) / 60;
 
                 if (layer.timeout != 0 && runtimeMinutes > layer.timeout) {
                     killFrame(frame.getFrameId(), hostname, KillCause.FrameTimedOut);
@@ -896,30 +922,33 @@ public class HostReportHandler {
     }
 
     /**
-     * Number of seconds before running frames have to exist before being verified against the DB.
+     * Number of seconds before running frames have to exist before being verified
+     * against the DB.
      */
     private static final long FRAME_VERIFICATION_GRACE_PERIOD_SECONDS = 120;
 
     /**
-     * Verify all running frames in the given report against the DB. Frames that have not been
+     * Verify all running frames in the given report against the DB. Frames that
+     * have not been
      * running for at least FRAME_VERIFICATION_GRACE_PERIOD_SECONDS are skipped.
      *
-     * If a frame->proc mapping is not verified then the record for the proc is pulled from the DB.
-     * If the proc doesn't exist at all, then the frame is killed with the message: "but the DB did
+     * If a frame->proc mapping is not verified then the record for the proc is
+     * pulled from the DB.
+     * If the proc doesn't exist at all, then the frame is killed with the message:
+     * "but the DB did
      * not reflect this"
      *
-     * The main reason why a proc no longer exists is that the cue though the host went down and
+     * The main reason why a proc no longer exists is that the cue though the host
+     * went down and
      * cleared out all running frames.
      *
      * @param report
      */
     public List<RunningFrameInfo> verifyRunningFrameInfo(HostReport report) {
-        List<RunningFrameInfo> runningFrames =
-                new ArrayList<RunningFrameInfo>(report.getFramesCount());
+        List<RunningFrameInfo> runningFrames = new ArrayList<RunningFrameInfo>(report.getFramesCount());
 
         for (RunningFrameInfo runningFrame : report.getFramesList()) {
-            long runtimeSeconds =
-                    (System.currentTimeMillis() - runningFrame.getStartTime()) / 1000l;
+            long runtimeSeconds = (System.currentTimeMillis() - runningFrame.getStartTime()) / 1000l;
 
             // Don't test frames that haven't been running long enough.
             if (runtimeSeconds < FRAME_VERIFICATION_GRACE_PERIOD_SECONDS) {
@@ -937,8 +966,10 @@ public class HostReportHandler {
             }
 
             /*
-             * The frame this proc is running is no longer assigned to this proc. Don't ever touch
-             * the frame record. If we make it here that means the proc has been running for over 2
+             * The frame this proc is running is no longer assigned to this proc. Don't ever
+             * touch
+             * the frame record. If we make it here that means the proc has been running for
+             * over 2
              * min.
              */
             String msg;
@@ -950,7 +981,8 @@ public class HostReportHandler {
                         + " not " + runningFrame.getFrameId();
             } catch (Exception e) {
                 /*
-                 * This will happen if the host goes offline and then comes back. In this case, we
+                 * This will happen if the host goes offline and then comes back. In this case,
+                 * we
                  * don't touch the frame since it might already be running somewhere else. We do
                  * however kill the proc.
                  */
@@ -966,8 +998,7 @@ public class HostReportHandler {
             if (proc == null) {
                 // A frameCompleteReport might have been delivered before this report was
                 // processed
-                FrameDetail frameLatestVersion =
-                        jobManager.getFrameDetail(runningFrame.getFrameId());
+                FrameDetail frameLatestVersion = jobManager.getFrameDetail(runningFrame.getFrameId());
                 if (frameLatestVersion.state != FrameState.RUNNING) {
                     logger.info("DelayedVerification, the proc " + runningFrame.getResourceId()
                             + " on host " + report.getHost().getName() + " has already Completed "

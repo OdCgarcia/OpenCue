@@ -279,8 +279,6 @@ class Machine(object):
                     #    - size: "total program size"
                     #    - rss: inaccurate, similar to VmRss in /proc/[pid]/status
                     child_statm_fields = self._getStatFields(rqd.rqconstants.PATH_PROC_PID_STATM.format(pid))
-                    log.warning(f"Child Statm Fields: {child_statm_fields}")
-                    print(f"Child Statm Fields: {child_statm_fields}")
                     data["statm_size"] = (
                         int(re.search(r"\d+", child_statm_fields[2]).group())
                         if re.search(r"\d+", child_statm_fields[2])
@@ -840,6 +838,10 @@ class Machine(object):
             mcpStat = os.statvfs(self.getTempPath())
             self.__renderHost.free_mcp = (mcpStat.f_bavail * mcpStat.f_bsize) // KILOBYTE
 
+            freeMem = 0
+            freeSwapMem = 0
+            cachedMem = 0
+
             # Reads dynamic information from /proc/meminfo
             with open(rqd.rqconstants.PATH_MEMINFO, "r", encoding="utf-8") as fp:
                 for line in fp:
@@ -851,6 +853,14 @@ class Machine(object):
                         cachedMem = int(line.split()[1])
                     elif line.startswith("MemTotal"):
                         self.__renderHost.total_mem = int(line.split()[1])
+
+            log.debug(
+                "Memory stats: FreeMem=%s, SwapFree=%s, Cached=%s, TotalMem=%s",
+                freeMem,
+                freeSwapMem,
+                cachedMem,
+                self.__renderHost.total_mem,
+            )
 
             self.__renderHost.free_swap = freeSwapMem
             self.__renderHost.free_mem = freeMem + cachedMem

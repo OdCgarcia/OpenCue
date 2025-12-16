@@ -1,5 +1,4 @@
-
-#  Copyright Contributors to the OpenCue Project
+# Copyright (c) 2025. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,12 +16,8 @@
 """Utility functions."""
 
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-from builtins import str
-from builtins import object
 import functools
 import logging
 import os
@@ -31,12 +26,13 @@ import socket
 import subprocess
 import threading
 import uuid
+from builtins import object, str
 
 import rqd.rqconstants
 
-if platform.system() != 'Windows':
-    import pwd
+if platform.system() != "Windows":
     import grp
+    import pwd
 
     PERMISSIONS = threading.Lock()
     HIGH_PERMISSION_GROUPS = os.getgroups()
@@ -52,12 +48,10 @@ class Memoize(object):
         self.methodCache = {}
 
     def __call__(self, *args):
-        return self.cacheGet(
-            self.memoized, args, lambda: self.func(*args))
+        return self.cacheGet(self.memoized, args, lambda: self.func(*args))
 
     def __get__(self, obj, objtype):
-        return self.cacheGet(
-            self.methodCache, obj, lambda: self.__class__(functools.partial(self.func, obj)))
+        return self.cacheGet(self.methodCache, obj, lambda: self.__class__(functools.partial(self.func, obj)))
 
     @staticmethod
     def isCached(cache, key):
@@ -77,15 +71,18 @@ class Memoize(object):
 
 def permissionsHigh():
     """Sets the effective gid/uid to processes original values (root)"""
+    log.warning("Permission High Method")
     if platform.system() == "Windows" or not rqd.rqconstants.RQD_BECOME_JOB_USER:
         return
     # PERMISSIONS gets locked here and unlocked at permissionsLow()
     # therefore 'with' should not be used here
     # pylint: disable=consider-using-with
+    log.warning(f"Seting Effective permissions grp {os.getgid()} and user {os.getuid}")
     PERMISSIONS.acquire()
     os.setegid(os.getgid())
     os.seteuid(os.getuid())
     try:
+        log.warning(f"Trying to set high permissions: {HIGH_PERMISSION_GROUPS}")
         os.setgroups(HIGH_PERMISSION_GROUPS)
     # pylint: disable=broad-except
     except Exception:
@@ -94,11 +91,15 @@ def permissionsHigh():
 
 def permissionsLow():
     """Sets the effective gid/uid to one with less permissions:
-       RQD_GID and RQD_UID"""
-    if platform.system() in ('Windows', 'Darwin') or not rqd.rqconstants.RQD_BECOME_JOB_USER:
+    RQD_GID and RQD_UID"""
+    log.warning("Permissions Low Method")
+    if platform.system() in ("Windows", "Darwin") or not rqd.rqconstants.RQD_BECOME_JOB_USER:
         return
     if os.getegid() != rqd.rqconstants.RQD_GID or os.geteuid() != rqd.rqconstants.RQD_UID:
+        log.warning(f"Before becomig root grp {os.getgid()} and user {os.getuid}")
         __becomeRoot()
+        log.warning(f"After becoming root grp {os.getgid()} and user {os.getuid}")
+        log.warning(f"Constanst grp: {rqd.rqconstants.RQD_GID} and user: {rqd.rqconstants.RQD_UID}")
         os.setegid(rqd.rqconstants.RQD_GID)
         os.seteuid(rqd.rqconstants.RQD_UID)
     # This will be skipped on first start
@@ -108,7 +109,8 @@ def permissionsLow():
 
 def permissionsUser(uid, gid):
     """Sets the effective gid/uid to supplied values"""
-    if platform.system() in ('Windows', 'Darwin') or not rqd.rqconstants.RQD_BECOME_JOB_USER:
+    log.warning(f"Setting permissions User: grp {gid}, user: {uid}")
+    if platform.system() in ("Windows", "Darwin") or not rqd.rqconstants.RQD_BECOME_JOB_USER:
         return
     with PERMISSIONS:
         __becomeRoot()
@@ -147,15 +149,16 @@ def checkAndCreateUser(username, uid=None, gid=None):
         permissionsHigh()
         try:
             cmd = [
-                'useradd',
-                '-p', str(uuid.uuid4()),  # generate a random password
+                "useradd",
+                "-p",
+                str(uuid.uuid4()),  # generate a random password
             ]
             if uid:
-                cmd += ['-u', str(uid)]
+                cmd += ["-u", str(uid)]
             if gid:
-                cmd += ['-g', str(gid)]
+                cmd += ["-g", str(gid)]
             cmd.append(username)
-            log.info("Frame's username not found on host. Adding user with: %s", cmd)
+            log.warning("Frame's username not found on host. Adding user with: %s", cmd)
             subprocess.check_call(cmd)
         # pylint: disable=broad-except
         except Exception:
@@ -178,7 +181,7 @@ def getHostname():
             return rqd.rqconstants.OVERRIDE_HOSTNAME
         if rqd.rqconstants.RQD_USE_IP_AS_HOSTNAME or rqd.rqconstants.RQD_USE_IPV6_AS_HOSTNAME:
             return getHostIp()
-        return socket.gethostbyaddr(socket.gethostname())[0].split('.')[0]
+        return socket.gethostbyaddr(socket.gethostname())[0].split(".")[0]
     except (socket.herror, socket.gaierror):
         log.warning("Failed to resolve hostname to IP, falling back to local hostname")
         return socket.gethostname()

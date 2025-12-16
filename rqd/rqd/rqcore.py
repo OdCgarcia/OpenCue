@@ -131,6 +131,7 @@ class RqCore(object):
     def onInterval(self, sleepTime=None):
         """This is called by self.grpcConnected as a timer thread to execute
         every interval"""
+        log.debug("onInterval heartbeat")
         if sleepTime is None:
             self.intervalSleepTime = random.randint(
                 rqd.rqconstants.RQD_MIN_PING_INTERVAL_SEC, rqd.rqconstants.RQD_MAX_PING_INTERVAL_SEC
@@ -649,7 +650,9 @@ class RqCore(object):
 
     def sendStatusReport(self):
         """Sends the current host report to Cuebot."""
+        log.debug("Sending status report")
         self.network.reportStatus(self.machine.getHostReport())
+        log.debug("Status report sent")
 
     def isWaitingForIdle(self):
         """Returns whether the host is waiting until idle to take some action."""
