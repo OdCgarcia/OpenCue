@@ -205,6 +205,8 @@ public class CoreUnitDispatcher implements Dispatcher {
 
     @Override
     public List<VirtualProc> dispatchHostToAllShows(DispatchHost host) {
+        logger.trace("dispatchHostToAllShows called for " + host.getName() + "job query max "
+                + getIntProperty("dispatcher.job_query_max"));
         Set<String> jobs = dispatchSupport.findDispatchJobsForAllShows(host,
                 getIntProperty("dispatcher.job_query_max"));
 
@@ -213,14 +215,16 @@ public class CoreUnitDispatcher implements Dispatcher {
 
     @Override
     public List<VirtualProc> dispatchHost(DispatchHost host) {
-        logger.trace("dispatchHost called for " + host.getName());
+        logger.trace("dispatchHost called for " + host.getName() + "job query max "
+                + getIntProperty("dispatcher.job_query_max"));
 
         Set<String> jobs = getGpuJobs(host, null);
 
         if (jobs == null) {
             logger.trace("No GPU jobs found, searching for standard jobs for " + host.getName());
             jobs = dispatchSupport.findDispatchJobs(host,
-                    getIntProperty("dispatcher.job_query_max"));
+                    getIntProperty("dispatcher.job_query_max")); // Print this getIntProperty
+                                                                 // tomorrow
         } else {
             logger.trace("Found GPU jobs for " + host.getName() + ": " + jobs.size());
         }
