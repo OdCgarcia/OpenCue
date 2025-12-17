@@ -211,6 +211,9 @@ public class DispatcherDaoJdbc extends JdbcDaoSupport implements DispatcherDao {
                 continue;
             }
 
+            logger.info("Host " + host.getName() + " has idle gpus at: " + host.idleGpus
+                    + ", scheduling mode: " + schedulingMode.name());
+
             if (host.idleGpus == 0 && (schedulingMode == SchedulingMode.BALANCED)) {
                 // --- DEBUG START: Log SQL Parameters ---
                 String osLogStr = "null";
