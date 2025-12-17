@@ -479,11 +479,15 @@ class Machine(object):
 
     def getGpuMemoryFree(self):
         """Returns the available gpu memory in kb for CUE_GPU_MEMORY"""
+        log.warning(f"OD - Free GPU memory: {self.__getGpuValues()['free']}")
         return self.__getGpuValues()["free"]
 
     def getGpuMemoryUsed(self, unitId):
         """Returns the available gpu memory in kb for CUE_GPU_MEMORY"""
         usedMemory = self.__getGpuValues()["used"]
+        log_mem = usedMemory[unitId] if unitId in usedMemory else 0
+        log.warning(f"OD - unitId: {unitId} in usedMemory: {unitId in usedMemory}")
+        log.warning(f"OD - Used GPU memory for unit {unitId}: {log_mem}")
         return usedMemory[unitId] if unitId in usedMemory else 0
 
     # pylint: disable=attribute-defined-outside-init
@@ -491,13 +495,20 @@ class Machine(object):
         self.gpuResults = {"count": 0, "total": 0, "free": 0, "used": {}, "updated": 0}
 
     def __getGpuValues(self):
+        log.warning("OD - Getting GPU values")
         if not hasattr(self, "gpuNotSupported"):
+            log.warning("OD - GPU not supported attribute not found")
             if not hasattr(self, "gpuResults"):
+                log.warning("OD - Resetting GPU results")
                 self.__resetGpuResults()
             if not rqd.rqconstants.ALLOW_GPU:
+                log.warning("OD - GPU not supported")
                 self.gpuNotSupported = True
                 return self.gpuResults
             if self.gpuResults["updated"] > int(time.time()) - 60:
+                log.warning(
+                    f"OD - Returning cached GPU results, next update in {self.gpuResults['updated'] + 60 - int(time.time())} seconds"
+                )
                 return self.gpuResults
             try:
                 nvidia_smi = subprocess.getoutput(
@@ -529,7 +540,10 @@ class Machine(object):
                 self.__resetGpuResults()
                 log.warning("Failed to query nvidia-smi due to: %s at %s", e, traceback.extract_tb(sys.exc_info()[2]))
         else:
+            log.warning("OD - GPU not supported previously detected")
             self.__resetGpuResults()
+
+        log.warning(f"OD - Returning GPU results: {self.gpuResults}")
         return self.gpuResults
 
     def __getSwapout(self):

@@ -71,18 +71,15 @@ class Memoize(object):
 
 def permissionsHigh():
     """Sets the effective gid/uid to processes original values (root)"""
-    log.warning("Permission High Method")
     if platform.system() == "Windows" or not rqd.rqconstants.RQD_BECOME_JOB_USER:
         return
     # PERMISSIONS gets locked here and unlocked at permissionsLow()
     # therefore 'with' should not be used here
     # pylint: disable=consider-using-with
-    log.warning(f"Seting Effective permissions grp {os.getgid()} and user {os.getuid}")
     PERMISSIONS.acquire()
     os.setegid(os.getgid())
     os.seteuid(os.getuid())
     try:
-        log.warning(f"Trying to set high permissions: {HIGH_PERMISSION_GROUPS}")
         os.setgroups(HIGH_PERMISSION_GROUPS)
     # pylint: disable=broad-except
     except Exception:
@@ -92,13 +89,10 @@ def permissionsHigh():
 def permissionsLow():
     """Sets the effective gid/uid to one with less permissions:
     RQD_GID and RQD_UID"""
-    log.warning("Permissions Low Method")
     if platform.system() in ("Windows", "Darwin") or not rqd.rqconstants.RQD_BECOME_JOB_USER:
         return
     if os.getegid() != rqd.rqconstants.RQD_GID or os.geteuid() != rqd.rqconstants.RQD_UID:
-        log.warning(f"Before becomig root grp {os.getgid()} and user {os.getuid}")
         __becomeRoot()
-        log.warning(f"After becoming root grp {os.getgid()} and user {os.getuid}")
         log.warning(f"Constanst grp: {rqd.rqconstants.RQD_GID} and user: {rqd.rqconstants.RQD_UID}")
         os.setegid(rqd.rqconstants.RQD_GID)
         os.seteuid(rqd.rqconstants.RQD_UID)
