@@ -168,6 +168,8 @@ public class DispatcherDaoJdbc extends JdbcDaoSupport implements DispatcherDao {
     }
 
     private Set<String> findDispatchJobs(DispatchHost host, int numJobs, boolean shuffleShows) {
+        logger.info("Private Find Dipatch jobs called for host" + host.getName() + ", numJobs: "
+                + numJobs + ", shuffleShows: " + shuffleShows);
         LinkedHashSet<String> result = new LinkedHashSet<String>();
         List<SortableShow> shows = new LinkedList<SortableShow>(getBookableShows(host));
         // shows were sorted. If we want it in random sequence, we need to shuffle it.
@@ -303,16 +305,21 @@ public class DispatcherDaoJdbc extends JdbcDaoSupport implements DispatcherDao {
 
     @Override
     public Set<String> findDispatchJobsForAllShows(DispatchHost host, int numJobs) {
+        logger.info("Called findDispatchJobsForAllShows for host: " + host.getName() + ", numJobs: "
+                + numJobs + "shuffleShows: true");
         return findDispatchJobs(host, numJobs, true);
     }
 
     @Override
     public Set<String> findDispatchJobs(DispatchHost host, int numJobs) {
+        logger.info("Called findDispatchJobs for host: " + host.getName() + ", numJobs: " + numJobs
+                + "shuffleShows: false");
         return findDispatchJobs(host, numJobs, false);
     }
 
     @Override
     public Set<String> findDispatchJobs(DispatchHost host, GroupInterface g) {
+        logger.info("Called findDispatchJobs for host: " + host.getName());
         LinkedHashSet<String> result = new LinkedHashSet<String>(5);
         long lastTime = System.currentTimeMillis();
 

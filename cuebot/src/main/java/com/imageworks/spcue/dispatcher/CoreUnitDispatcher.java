@@ -223,8 +223,7 @@ public class CoreUnitDispatcher implements Dispatcher {
         if (jobs == null) {
             logger.trace("No GPU jobs found, searching for standard jobs for " + host.getName());
             jobs = dispatchSupport.findDispatchJobs(host,
-                    getIntProperty("dispatcher.job_query_max")); // Print this getIntProperty
-                                                                 // tomorrow
+                    getIntProperty("dispatcher.job_query_max"));
         } else {
             logger.trace("Found GPU jobs for " + host.getName() + ": " + jobs.size());
         }
