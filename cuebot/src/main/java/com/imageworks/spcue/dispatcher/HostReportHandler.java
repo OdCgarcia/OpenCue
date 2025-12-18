@@ -180,11 +180,13 @@ public class HostReportHandler {
             RenderHost rhost = report.getHost();
             try {
                 host = hostManager.findDispatchHost(rhost.getName());
+                logger.info("Setting host stats for " + rhost.getName());
                 hostManager.setHostStatistics(host, rhost.getTotalMem(), rhost.getFreeMem(),
                         rhost.getTotalSwap(), rhost.getFreeSwap(), rhost.getTotalMcp(),
                         rhost.getFreeMcp(), rhost.getTotalGpuMem(), rhost.getFreeGpuMem(),
                         rhost.getLoad(), new Timestamp(rhost.getBootTime() * 1000l),
                         rhost.getAttributesMap().get("SP_OS"));
+                logger.info("Host stats done set for " + rhost.getName());
 
                 // Both logics are conflicting, only change hardware state if
                 // there was no need for a tempDirStorage state change
@@ -257,7 +259,8 @@ public class HostReportHandler {
                 }
             }
 
-            logger.trace("Host " + host.getName() + " has idle gpu memory: " + host.idleGpuMemory);
+            logger.trace("Host " + host.getName() + " has idle gpu memory: " + host.idleGpuMemory
+                    + " Compared to rshost freeGpuMem: " + report.getHost().getFreeGpuMem());
 
             long memReservedMin =
                     env.getRequiredProperty("dispatcher.memory.mem_reserved_min", Long.class);

@@ -118,7 +118,7 @@ public class HostManagerService implements HostManager {
             long totalSwap, long freeSwap, long totalMcp, long freeMcp, long totalGpuMemory,
             long freeGpuMemory, int load, Timestamp bootTime, String os) {
 
-        logger.trace("SetHostSatistics -- Free GPU Memory for host " + host.getName() + ": "
+        logger.info("SetHostSatistics -- Free GPU Memory for host " + host.getName() + ": "
                 + freeGpuMemory + " MB");
         hostDao.updateHostStats(host, totalMemory, freeMemory, totalSwap, freeSwap, totalMcp,
                 freeMcp, totalGpuMemory, freeGpuMemory, load, bootTime, os);
