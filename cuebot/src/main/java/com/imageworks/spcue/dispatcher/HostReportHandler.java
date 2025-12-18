@@ -251,15 +251,8 @@ public class HostReportHandler {
                 }
             }
 
-            logger.trace("Host " + host.getName() + " freeGpuMem: "
-                    + report.getHost().getFreeGpuMem() + " MB and it needs " + CueUtil.MB512
-                    + " MB of free gpu memory to be bookable.");
-
             long memReservedMin =
                     env.getRequiredProperty("dispatcher.memory.mem_reserved_min", Long.class);
-
-            logger.trace("Host " + host.getName() + " needs to have at least " + memReservedMin
-                    + " MB of free memory to be bookable.");
 
             if (!isTempDirStorageEnough(report.getHost().getTotalMcp(),
                     report.getHost().getFreeMcp(), host.getOs())) {
@@ -286,12 +279,12 @@ public class HostReportHandler {
                 }
             } else if (!dispatchSupport.isCueBookable(host)) {
                 msg = "The cue has no pending jobs";
-            } else if (report.getHost().getFreeGpuMem() < CueUtil.MB512) {
-                logger.trace("OD LOG - Host " + host.getName() + " free GPU memory: "
-                        + report.getHost().getFreeGpuMem() + " MB but it needs " + CueUtil.MB512
+            } else if (report.getHost().getFreeGpuMem() < CueUtil.GB) {
+                logger.trace("OD LOG - Host " + host.getName() + " has free GPU memory: "
+                        + report.getHost().getFreeGpuMem() + " MB but it needs " + CueUtil.GB
                         + " MB");
                 msg = String.format("%s doesn't have enough free GPU memory, %d needs %d",
-                        host.name, report.getHost().getFreeGpuMem(), CueUtil.MB512);
+                        host.name, report.getHost().getFreeGpuMem(), CueUtil.GB);
             }
 
             /*
