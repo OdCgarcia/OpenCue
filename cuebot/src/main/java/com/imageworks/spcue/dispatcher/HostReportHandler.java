@@ -247,18 +247,19 @@ public class HostReportHandler {
                     + " cores to be bookable.");
 
             if (hasLocalJob) {
-                logger.trace("Host " + host.getName() + " has local job");
                 List<LocalHostAssignment> lcas = bookingManager.getLocalHostAssignment(host);
                 for (LocalHostAssignment lca : lcas) {
                     bookingManager.removeInactiveLocalHostAssignment(lca);
                 }
             }
-            logger.trace("Getting mem_reserved_min property");
+
+            logger.trace("Host " + host.getName() + " has idle gpu memory: " + host.idleGpuMemory);
+
             long memReservedMin =
                     env.getRequiredProperty("dispatcher.memory.mem_reserved_min", Long.class);
 
             logger.trace("Host " + host.getName() + " needs to have at least " + memReservedMin
-                    + "MB of free memory to be bookable.");
+                    + " MB of free memory to be bookable.");
 
             if (!isTempDirStorageEnough(report.getHost().getTotalMcp(),
                     report.getHost().getFreeMcp(), host.getOs())) {
