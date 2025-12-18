@@ -161,11 +161,6 @@ public class HostReportHandler {
 
     public void handleHostReport(HostReport report, boolean isBoot) {
         long startTime = System.currentTimeMillis();
-        logger.trace("Handling host report for: " + report.getHost().getName());
-
-        // here add the log to see what value are we getting for freeGpuMem
-        logger.info("HandleHostReport -- Free GPU Memory: " + report.getHost().getFreeGpuMem()
-                + " MB for host: " + report.getHost().getName());
 
         try {
             long swapOut = 0;
@@ -180,13 +175,11 @@ public class HostReportHandler {
             RenderHost rhost = report.getHost();
             try {
                 host = hostManager.findDispatchHost(rhost.getName());
-                logger.info("Setting host stats for " + rhost.getName());
                 hostManager.setHostStatistics(host, rhost.getTotalMem(), rhost.getFreeMem(),
                         rhost.getTotalSwap(), rhost.getFreeSwap(), rhost.getTotalMcp(),
                         rhost.getFreeMcp(), rhost.getTotalGpuMem(), rhost.getFreeGpuMem(),
                         rhost.getLoad(), new Timestamp(rhost.getBootTime() * 1000l),
                         rhost.getAttributesMap().get("SP_OS"));
-                logger.info("Host stats done set for " + rhost.getName());
 
                 // Both logics are conflicting, only change hardware state if
                 // there was no need for a tempDirStorage state change
@@ -245,7 +238,6 @@ public class HostReportHandler {
              */
             String msg = null;
             boolean hasLocalJob = bookingManager.hasLocalHostAssignment(host);
-            logger.trace("Checking booking requirements for " + host.getName());
             int coresToReserve =
                     host.handleNegativeCoresRequirement(Dispatcher.CORE_POINTS_RESERVED_MIN);
 
@@ -259,8 +251,9 @@ public class HostReportHandler {
                 }
             }
 
-            logger.trace("Host " + host.getName() + " has idle gpu memory: " + host.idleGpuMemory
-                    + " Compared to rshost freeGpuMem: " + report.getHost().getFreeGpuMem());
+            logger.trace("Host " + host.getName() + " freeGpuMem: "
+                    + report.getHost().getFreeGpuMem() + " MB and it needs " + CueUtil.MB512
+                    + " MB of free gpu memory to be bookable.");
 
             long memReservedMin =
                     env.getRequiredProperty("dispatcher.memory.mem_reserved_min", Long.class);
@@ -293,6 +286,12 @@ public class HostReportHandler {
                 }
             } else if (!dispatchSupport.isCueBookable(host)) {
                 msg = "The cue has no pending jobs";
+            } else if (report.getHost().getFreeGpuMem() < CueUtil.MB512) {
+                logger.trace("OD LOG - Host " + host.getName() + " free GPU memory: "
+                        + report.getHost().getFreeGpuMem() + " MB but it needs " + CueUtil.MB512
+                        + " MB");
+                msg = String.format("%s doesn't have enough free GPU memory, %d needs %d",
+                        host.name, report.getHost().getFreeGpuMem(), CueUtil.MB512);
             }
 
             /*
@@ -301,11 +300,8 @@ public class HostReportHandler {
             if (msg != null) {
                 logger.trace(msg);
             } else {
-                logger.trace(host.getName() + " passed booking requirements");
                 // check again. The dangling local host assignment could be removed.
                 hasLocalJob = bookingManager.hasLocalHostAssignment(host);
-
-                logger.trace("Host " + host.getName() + " hasLocalJob: " + hasLocalJob);
 
                 /*
                  * Check to see if a local job has been assigned.
@@ -328,8 +324,6 @@ public class HostReportHandler {
                     logger.trace("Host " + host.getName() + " booked for preferred show.");
                     return;
                 }
-
-                logger.trace("Host " + host.getName() + " booked for normal booking.");
 
                 bookingQueue.execute(new DispatchBookHost(host, dispatcher, env));
             }

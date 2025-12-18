@@ -133,17 +133,13 @@ public class CoreUnitDispatcher implements Dispatcher {
     }
 
     private List<VirtualProc> dispatchJobs(DispatchHost host, Set<String> jobs) {
-        logger.trace(
-                "dispatchJobs called for " + host.getName() + " with " + jobs.size() + " jobs");
         List<VirtualProc> procs = new ArrayList<VirtualProc>();
 
         try {
             for (String jobid : jobs) {
-                logger.trace("Processing job " + jobid + " for host " + host.getName());
 
                 if (!host.hasAdditionalResources(CORE_POINTS_RESERVED_MIN, MEM_RESERVED_MIN,
                         GPU_UNITS_RESERVED_MIN, MEM_GPU_RESERVED_MIN)) {
-                    logger.trace("Host " + host.getName() + " has no additional resources");
                     return procs;
                 }
 
@@ -205,8 +201,6 @@ public class CoreUnitDispatcher implements Dispatcher {
 
     @Override
     public List<VirtualProc> dispatchHostToAllShows(DispatchHost host) {
-        logger.trace("dispatchHostToAllShows called for " + host.getName() + " job query max "
-                + getIntProperty("dispatcher.job_query_max"));
         Set<String> jobs = dispatchSupport.findDispatchJobsForAllShows(host,
                 getIntProperty("dispatcher.job_query_max"));
 
@@ -215,23 +209,12 @@ public class CoreUnitDispatcher implements Dispatcher {
 
     @Override
     public List<VirtualProc> dispatchHost(DispatchHost host) {
-        logger.trace("dispatchHost called for " + host.getName() + " job query max "
-                + getIntProperty("dispatcher.job_query_max"));
 
         Set<String> jobs = getGpuJobs(host, null);
 
         if (jobs == null) {
-            logger.trace("No GPU jobs found, searching for standard jobs for " + host.getName());
             jobs = dispatchSupport.findDispatchJobs(host,
                     getIntProperty("dispatcher.job_query_max"));
-        } else {
-            logger.trace("Found GPU jobs for " + host.getName() + ": " + jobs.size());
-        }
-
-        if (jobs.isEmpty()) {
-            logger.trace("No jobs found for " + host.getName());
-        } else {
-            logger.trace("Found " + jobs.size() + " jobs for " + host.getName());
         }
 
         return dispatchJobs(host, jobs);
@@ -262,8 +245,6 @@ public class CoreUnitDispatcher implements Dispatcher {
 
     @Override
     public List<VirtualProc> dispatchHost(DispatchHost host, JobInterface job) {
-        logger.trace("dispatchHost(host, job) called for " + host.getName() + " and job "
-                + job.getName());
 
         List<VirtualProc> procs = new ArrayList<VirtualProc>();
 

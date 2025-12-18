@@ -168,8 +168,6 @@ public class DispatcherDaoJdbc extends JdbcDaoSupport implements DispatcherDao {
     }
 
     private Set<String> findDispatchJobs(DispatchHost host, int numJobs, boolean shuffleShows) {
-        logger.info("Private Find Dipatch jobs called for host " + host.getName() + ", numJobs: "
-                + numJobs + ", shuffleShows: " + shuffleShows);
         LinkedHashSet<String> result = new LinkedHashSet<String>();
         List<SortableShow> shows = new LinkedList<SortableShow>(getBookableShows(host));
         // shows were sorted. If we want it in random sequence, we need to shuffle it.
@@ -192,8 +190,6 @@ public class DispatcherDaoJdbc extends JdbcDaoSupport implements DispatcherDao {
                 continue;
             }
 
-            logger.info("Looking jobs for show " + s.getShowId() + " on host " + host.getName());
-
             /**
              * Check if the show is over its subscription because we're using cached SortableShows,
              * we don't pull a fresh list of shows for a while. If the show is over its subscription
@@ -211,24 +207,21 @@ public class DispatcherDaoJdbc extends JdbcDaoSupport implements DispatcherDao {
                 continue;
             }
 
-            logger.info("Host " + host.getName() + " has idle gpus at: " + host.idleGpus
-                    + ", scheduling mode: " + schedulingMode.name());
-
             // if (host.idleGpus == 0 && (schedulingMode == SchedulingMode.BALANCED)) {
             if (schedulingMode == SchedulingMode.BALANCED) {
                 // --- DEBUG START: Log SQL Parameters ---
-                String osLogStr = "null";
-                if (host.getOs() != null) {
-                    // Uses Arrays.toString for a clean [linux, rhel7] format
-                    osLogStr = java.util.Arrays.toString(host.getOs());
-                }
+                // String osLogStr = "null";
+                // if (host.getOs() != null) {
+                // // Uses Arrays.toString for a clean [linux, rhel7] format
+                // osLogStr = java.util.Arrays.toString(host.getOs());
+                // }
 
-                logger.info("SQL_DEBUG_PARAMS | " + "ShowID: " + s.getShowId() + " | "
-                        + "FacilityID: " + host.getFacilityId() + " | " + "OS: " + osLogStr + " | "
-                        + "IdleCores: " + host.idleCores + " | " + "IdleMem: " + host.idleMemory
-                        + " | " + "ThreadMode: " + threadMode(host.threadMode) + " | "
-                        + "HostName: " + host.getName() + " | " + "Limit: " + (numJobs * 10)
-                        + "GPU mem: " + host.idleGpuMemory);
+                // logger.info("SQL_DEBUG_PARAMS | " + "ShowID: " + s.getShowId() + " | "
+                // + "FacilityID: " + host.getFacilityId() + " | " + "OS: " + osLogStr + " | "
+                // + "IdleCores: " + host.idleCores + " | " + "IdleMem: " + host.idleMemory
+                // + " | " + "ThreadMode: " + threadMode(host.threadMode) + " | "
+                // + "HostName: " + host.getName() + " | " + "Limit: " + (numJobs * 10)
+                // + "GPU mem: " + host.idleGpuMemory);
                 // --- DEBUG END ---
                 result.addAll(getJdbcTemplate().query(new PreparedStatementCreator() {
                     @Override
@@ -327,15 +320,11 @@ public class DispatcherDaoJdbc extends JdbcDaoSupport implements DispatcherDao {
 
     @Override
     public Set<String> findDispatchJobsForAllShows(DispatchHost host, int numJobs) {
-        logger.info("Called findDispatchJobsForAllShows for host: " + host.getName() + ", numJobs: "
-                + numJobs + "shuffleShows: true");
         return findDispatchJobs(host, numJobs, true);
     }
 
     @Override
     public Set<String> findDispatchJobs(DispatchHost host, int numJobs) {
-        logger.info("Called findDispatchJobs for host: " + host.getName() + ", numJobs: " + numJobs
-                + "shuffleShows: false");
         return findDispatchJobs(host, numJobs, false);
     }
 
