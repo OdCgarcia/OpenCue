@@ -910,6 +910,8 @@ class Machine(object):
 
     def getHostReport(self):
         """Updates and returns the hostReport struct"""
+        host_info = self.getHostInfo()
+        log.warning(f"OD - Host info: {host_info}")
         self.__hostReport.host.CopyFrom(self.getHostInfo())
 
         self.__hostReport.ClearField("frames")

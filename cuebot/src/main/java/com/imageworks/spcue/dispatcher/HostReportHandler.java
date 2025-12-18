@@ -163,6 +163,10 @@ public class HostReportHandler {
         long startTime = System.currentTimeMillis();
         logger.trace("Handling host report for: " + report.getHost().getName());
 
+        // here add the log to see what value are we getting for freeGpuMem
+        logger.info("HandleHostReport -- Free GPU Memory: " + report.getHost().getFreeGpuMem()
+                + " MB for host: " + report.getHost().getName());
+
         try {
             long swapOut = 0;
             if (report.getHost().getAttributesMap().containsKey("swapout")) {
