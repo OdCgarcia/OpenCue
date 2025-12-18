@@ -227,7 +227,8 @@ public class DispatcherDaoJdbc extends JdbcDaoSupport implements DispatcherDao {
                         + "FacilityID: " + host.getFacilityId() + " | " + "OS: " + osLogStr + " | "
                         + "IdleCores: " + host.idleCores + " | " + "IdleMem: " + host.idleMemory
                         + " | " + "ThreadMode: " + threadMode(host.threadMode) + " | "
-                        + "HostName: " + host.getName() + " | " + "Limit: " + (numJobs * 10));
+                        + "HostName: " + host.getName() + " | " + "Limit: " + (numJobs * 10)
+                        + "GPU mem: " + host.idleGpuMemory);
                 // --- DEBUG END ---
                 result.addAll(getJdbcTemplate().query(new PreparedStatementCreator() {
                     @Override
