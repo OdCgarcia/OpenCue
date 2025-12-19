@@ -281,8 +281,8 @@ public class HostReportHandler {
                 msg = "The cue has no pending jobs";
             } else if (report.getHost().getFreeGpuMem() < CueUtil.GB) {
                 logger.trace("OD LOG - Host " + host.getName() + " has free GPU memory: "
-                        + report.getHost().getFreeGpuMem() + " MB but it needs " + CueUtil.GB
-                        + " MB");
+                        + report.getHost().getFreeGpuMem() + " KB but it needs " + CueUtil.GB
+                        + " KB");
                 msg = String.format("%s doesn't have enough free GPU memory, %d needs %d",
                         host.name, report.getHost().getFreeGpuMem(), CueUtil.GB);
             }
