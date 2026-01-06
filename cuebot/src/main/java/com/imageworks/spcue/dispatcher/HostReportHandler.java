@@ -214,6 +214,14 @@ public class HostReportHandler {
             List<RunningFrameInfo> runningFrames = verifyRunningFrameInfo(report);
 
             /*
+             * Get the 25% of the total gpu memory to be used as a threshold
+             */
+            long gpuMemThreshold = report.getHost().getTotalGpuMem() / 4;
+            logger.trace("OD LOG - Host:" + host.getName() + " has total GPU memory: "
+                    + report.getHost().getTotalGpuMem() + " KB, threshold set to " + gpuMemThreshold
+                    + " KB");
+
+            /*
              * Updates memory usage for the proc, frames, jobs, and layers. And LLU time for the
              * frames.
              */
@@ -279,12 +287,12 @@ public class HostReportHandler {
                 }
             } else if (!dispatchSupport.isCueBookable(host)) {
                 msg = "The cue has no pending jobs";
-            } else if (report.getHost().getFreeGpuMem() < CueUtil.GB) {
+            } else if (report.getHost().getFreeGpuMem() < gpuMemThreshold) {
                 logger.trace("OD LOG - Host " + host.getName() + " has free GPU memory: "
-                        + report.getHost().getFreeGpuMem() + " KB but it needs " + CueUtil.GB
+                        + report.getHost().getFreeGpuMem() + " KB but it needs " + gpuMemThreshold
                         + " KB");
                 msg = String.format("%s doesn't have enough free GPU memory, %d needs %d",
-                        host.name, report.getHost().getFreeGpuMem(), CueUtil.GB);
+                        host.name, report.getHost().getFreeGpuMem(), gpuMemThreshold);
             }
 
             /*
