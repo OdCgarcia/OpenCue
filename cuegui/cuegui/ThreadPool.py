@@ -1,4 +1,4 @@
-#  Copyright Contributors to the OpenCue Project
+# Copyright (c) 2025. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -42,24 +42,21 @@ def someWorkCallback(work, result):
 """
 
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-from builtins import range
 import os
+from builtins import range
 
 from qtpy import QtCore
 
 import cuegui.Logger
-
 
 logger = cuegui.Logger.getLogger(__file__)
 
 
 def systemCpuCount():
     """systemCpuCount()->int
-        returns the # of procs on the system, linux only
+    returns the # of procs on the system, linux only
     """
     # pylint: disable=bare-except
     try:
@@ -94,8 +91,7 @@ class ThreadPool(QtCore.QObject):
             self.app.threads.append(thread)
             self.__threads.append(thread)
             self.__threads[i].start()
-            self.__threads[i].workComplete.connect(self.runCallback,
-                                                   QtCore.Qt.BlockingQueuedConnection)
+            self.__threads[i].workComplete.connect(self.runCallback, QtCore.Qt.BlockingQueuedConnection)
 
     def queue(self, callable_to_queue, callback, comment, *args):
         """Queues up a callable to be run from within a separate thread of execution."""
@@ -104,10 +100,12 @@ class ThreadPool(QtCore.QObject):
             self.start()
         if len(self._q_queue) <= self.__max_queue:
             self._q_queue.append((callable_to_queue, callback, comment, args))
+            self._q_mutex.unlock()
+            self._q_empty.wakeAll()
         else:
-            logger.warning("Queue length exceeds %s", self.__max_queue)
-        self._q_mutex.unlock()
-        self._q_empty.wakeAll()
+            queue_len = len(self._q_queue)
+            self._q_mutex.unlock()
+            logger.warning("Queue length exceeds %s (current: %s)", self.__max_queue, queue_len)
 
     def local(self, callable_to_queue, callback, comment, *args):
         """Executes a callable then immediately executes a callback, if given."""
@@ -170,7 +168,7 @@ class ThreadPool(QtCore.QObject):
                         self.workComplete.emit(work, result)
                         del result
                 except Exception as e:
-                    logger.info("Error processing work:' %s ', %s" , work[2], e)
+                    logger.info("Error processing work:' %s ', %s", work[2], e)
                 # pylint: enable=broad-except
                 logger.info("Done:' %s '", work[2])
             logger.debug("Thread Stopping")
