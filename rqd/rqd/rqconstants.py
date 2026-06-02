@@ -1,4 +1,4 @@
-#  Copyright Contributors to the OpenCue Project
+# Copyright (c) 2026. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,33 +15,30 @@
 
 """Constants used throughout RQD."""
 
+from __future__ import absolute_import, division, print_function
 
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
+import configparser
 import logging
 import os
 import platform
 import subprocess
 import sys
 import traceback
-import configparser
 
-if platform.system() == 'Linux':
+if platform.system() == "Linux":
     import pwd
 
 # NOTE: Some of these values can be overridden by CONFIG_FILE; see below.
 
-VERSION = 'dev'
+VERSION = "dev"
 
-if 'CUEBOT_HOSTNAME' in os.environ:
-    CUEBOT_HOSTNAME = os.environ['CUEBOT_HOSTNAME']
+if "CUEBOT_HOSTNAME" in os.environ:
+    CUEBOT_HOSTNAME = os.environ["CUEBOT_HOSTNAME"]
 else:
-    CUEBOT_HOSTNAME = 'localhost'
+    CUEBOT_HOSTNAME = "localhost"
 
 RQD_TIMEOUT = 10000
-DEFAULT_FACILITY = 'cloud'
+DEFAULT_FACILITY = "cloud"
 
 # GRPC VALUES
 RQD_GRPC_MAX_WORKERS = 10
@@ -79,14 +76,14 @@ RQD_USE_ALL_HOST_ENV_VARS = False
 RQD_CUSTOM_HOME_PREFIX = None
 RQD_CUSTOM_MAIL_PREFIX = None
 
-RQD_BECOME_JOB_USER = False
+RQD_BECOME_JOB_USER = True
 RQD_CREATE_USER_IF_NOT_EXISTS = True
 SENTRY_DSN_PATH = None
-RQD_TAGS = ''
+RQD_TAGS = ""
 RQD_PREPEND_TIMESTAMP = False
 
 KILL_SIGNAL = 9
-if platform.system() == 'Linux':
+if platform.system() == "Linux":
     RQD_UID = pwd.getpwnam("daemon")[2]
     RQD_GID = pwd.getpwnam("daemon")[3]
     # Linux's default uid limits are documented at
@@ -117,8 +114,8 @@ EXITSTATUS_FOR_FAILED_LAUNCH = 256
 EXITSTATUS_FOR_NIMBY_KILL = 286
 
 PATH_CPUINFO = "/proc/cpuinfo"
-PATH_INITTAB = "/etc/inittab" # spinux1
-PATH_INIT_TARGET = '/lib/systemd/system/default.target' # rhel7
+PATH_INITTAB = "/etc/inittab"  # spinux1
+PATH_INIT_TARGET = "/lib/systemd/system/default.target"  # rhel7
 PATH_LOADAVG = "/proc/loadavg"
 PATH_STAT = "/proc/stat"
 PATH_MEMINFO = "/proc/meminfo"
@@ -130,41 +127,41 @@ PATH_PROC_PID_STAT = "/proc/{0}/stat"
 PATH_PROC_PID_STATM = "/proc/{0}/statm"
 PATH_PROC_PID_CMDLINE = "/proc/{0}/cmdline"
 
-if platform.system() == 'Linux':
-    SYS_HERTZ = os.sysconf('SC_CLK_TCK')
+if platform.system() == "Linux":
+    SYS_HERTZ = os.sysconf("SC_CLK_TCK")
 
 # First retrieve local configuration file
-if platform.system() == 'Windows':
-    CONFIG_FILE = os.path.expandvars('%LOCALAPPDATA%/OpenCue/rqd.conf')
+if platform.system() == "Windows":
+    CONFIG_FILE = os.path.expandvars("%LOCALAPPDATA%/OpenCue/rqd.conf")
 else:
-    CONFIG_FILE = '/etc/opencue/rqd.conf'
+    CONFIG_FILE = "/etc/opencue/rqd.conf"
 
 # Then overwrites with an eventual shared configuration file
-CONFIG_FILE = os.environ.get('RQD_CONFIG_FILE', CONFIG_FILE)
+CONFIG_FILE = os.environ.get("RQD_CONFIG_FILE", CONFIG_FILE)
 
 # Finally get the one passed as argument when launching rqd
-if '-c' in sys.argv:
-    CONFIG_FILE = sys.argv[sys.argv.index('-c') + 1]
+if "-c" in sys.argv:
+    CONFIG_FILE = sys.argv[sys.argv.index("-c") + 1]
 
-OVERRIDE_CORES = None # number of cores. ex: None or 8
-OVERRIDE_IS_DESKTOP = None # Force rqd to run in 'desktop' mode
-OVERRIDE_PROCS = None # number of physical cpus. ex: None or 2
-OVERRIDE_MEMORY = None # in Kb
-OVERRIDE_NIMBY = None # True to turn on, False to turn off
-USE_NIMBY_PYNPUT = True # True pynput, False select
-OVERRIDE_HOSTNAME = None # Force to use this hostname
+OVERRIDE_CORES = None  # number of cores. ex: None or 8
+OVERRIDE_IS_DESKTOP = None  # Force rqd to run in 'desktop' mode
+OVERRIDE_PROCS = None  # number of physical cpus. ex: None or 2
+OVERRIDE_MEMORY = None  # in Kb
+OVERRIDE_NIMBY = None  # True to turn on, False to turn off
+USE_NIMBY_PYNPUT = True  # True pynput, False select
+OVERRIDE_HOSTNAME = None  # Force to use this hostname
 ALLOW_GPU = False
-LOAD_MODIFIER = 0 # amount to add/subtract from load
+LOAD_MODIFIER = 0  # amount to add/subtract from load
 
-LOG_FORMAT = '%(levelname)-9s openrqd-%(module)-10s: %(message)s'
+LOG_FORMAT = "%(levelname)-9s openrqd-%(module)-10s: %(message)s"
 CONSOLE_LOG_LEVEL = logging.WARNING
 # Equal to or greater than the consoleLevel. None deactives logging to file
 FILE_LOG_LEVEL = None
 
-if subprocess.getoutput('/bin/su --help').find('session-command') != -1:
-    SU_ARGUMENT = '--session-command'
+if subprocess.getoutput("/bin/su --help").find("session-command") != -1:
+    SU_ARGUMENT = "--session-command"
 else:
-    SU_ARGUMENT = '-c'
+    SU_ARGUMENT = "-c"
 
 SP_OS = platform.system()
 
@@ -191,7 +188,7 @@ try:
         # Respect case from the config file keys
         config.optionxform = str
         config.read(CONFIG_FILE)
-        logging.warning('Loading config %s', CONFIG_FILE)
+        logging.warning("Loading config %s", CONFIG_FILE)
 
         if config.has_option(__override_section, "RQD_GRPC_PORT"):
             RQD_GRPC_PORT = config.getint(__override_section, "RQD_GRPC_PORT")
@@ -220,13 +217,11 @@ try:
         if config.has_option(__override_section, "RQD_USE_IP_AS_HOSTNAME"):
             RQD_USE_IP_AS_HOSTNAME = config.getboolean(__override_section, "RQD_USE_IP_AS_HOSTNAME")
         if config.has_option(__override_section, "RQD_USE_IPV6_AS_HOSTNAME"):
-            RQD_USE_IPV6_AS_HOSTNAME = config.getboolean(__override_section,
-                                                         "RQD_USE_IPV6_AS_HOSTNAME")
+            RQD_USE_IPV6_AS_HOSTNAME = config.getboolean(__override_section, "RQD_USE_IPV6_AS_HOSTNAME")
         if config.has_option(__override_section, "RQD_USE_PATH_ENV_VAR"):
             RQD_USE_PATH_ENV_VAR = config.getboolean(__override_section, "RQD_USE_PATH_ENV_VAR")
         if config.has_option(__override_section, "RQD_USE_ALL_HOST_ENV_VARS"):
-            RQD_USE_ALL_HOST_ENV_VARS = config.getboolean(__override_section,
-                "RQD_USE_ALL_HOST_ENV_VARS")
+            RQD_USE_ALL_HOST_ENV_VARS = config.getboolean(__override_section, "RQD_USE_ALL_HOST_ENV_VARS")
         if config.has_option(__override_section, "RQD_BECOME_JOB_USER"):
             RQD_BECOME_JOB_USER = config.getboolean(__override_section, "RQD_BECOME_JOB_USER")
         if config.has_option(__override_section, "RQD_TAGS"):
@@ -262,12 +257,10 @@ try:
         if config.has_option(__override_section, "BACKUP_CACHE_PATH"):
             BACKUP_CACHE_PATH = config.get(__override_section, "BACKUP_CACHE_PATH")
         if config.has_option(__override_section, "BACKUP_CACHE_TIME_TO_LIVE_SECONDS"):
-            BACKUP_CACHE_TIME_TO_LIVE_SECONDS = config.getint(
-                __override_section, "BACKUP_CACHE_TIME_TO_LIVE_SECONDS")
+            BACKUP_CACHE_TIME_TO_LIVE_SECONDS = config.getint(__override_section, "BACKUP_CACHE_TIME_TO_LIVE_SECONDS")
 
         if config.has_option(__override_section, "RQD_DISPLAY_PATH"):
             RQD_DISPLAY_PATH = config.get(__override_section, "RQD_DISPLAY_PATH")
-
 
         __docker_config = "docker.config"
         __docker_gpu_mode = "DOCKER_GPU_MODE"
@@ -293,6 +286,9 @@ try:
 except Exception as e:
     logging.warning(
         "Failed to read values from config file %s due to %s at %s",
-        CONFIG_FILE, e, traceback.extract_tb(sys.exc_info()[2]))
+        CONFIG_FILE,
+        e,
+        traceback.extract_tb(sys.exc_info()[2]),
+    )
 
 logging.warning("CUEBOT_HOSTNAME: %s", CUEBOT_HOSTNAME)

@@ -1,4 +1,4 @@
-# Copyright (c) 2025. Od Studios, www.theodstudios.com, All rights reserved
+# Copyright (c) 2026. Od Studios, www.theodstudios.com, All rights reserved
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
 
 
 """Main RQD module, handles gRPC function implementation and job launching."""
-
 
 from __future__ import absolute_import, division, print_function
 
@@ -650,9 +649,7 @@ class RqCore(object):
 
     def sendStatusReport(self):
         """Sends the current host report to Cuebot."""
-        log.debug("Sending status report")
         self.network.reportStatus(self.machine.getHostReport())
-        log.debug("Status report sent")
 
     def isWaitingForIdle(self):
         """Returns whether the host is waiting until idle to take some action."""
